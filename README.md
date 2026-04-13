@@ -18,3 +18,16 @@ View your app in AI Studio: https://ai.studio/apps/89c06a94-4a16-4a1e-8bc7-8db2e
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Deploy to Firebase Hosting
+
+This project is already configured for Firebase Hosting with the site ID `lasustech-repository-37148` and the Vite build output in `dist`.
+
+1. Sign in to Firebase:
+   `firebase login`
+2. Build the app:
+   `npm run build`
+3. Deploy to Hosting:
+   `firebase deploy --only hosting:lasustech-repository-37148`
+
+After deployment, the app is available at `https://lasustech-repository-37148.web.app`.
