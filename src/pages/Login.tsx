@@ -30,6 +30,32 @@ export const Login: React.FC = () => {
   const [displayName, setDisplayName] = React.useState('');
   const [matricNumber, setMatricNumber] = React.useState('');
 
+  const getAuthErrorMessage = (err: any) => {
+    const code = err?.code || '';
+
+    if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+      return 'Invalid email or password. Please try again.';
+    }
+
+    if (code === 'auth/email-already-in-use') {
+      return 'An account with this email already exists.';
+    }
+
+    if (code === 'auth/weak-password') {
+      return 'Password must be at least 6 characters.';
+    }
+
+    if (code === 'auth/invalid-email') {
+      return 'Please enter a valid email address.';
+    }
+
+    if (code === 'auth/configuration-not-found' || code === 'auth/operation-not-allowed' || code === 'auth/unauthorized-domain') {
+      return 'Firebase Authentication is not fully configured for this project. Enable Email/Password sign-in in Firebase Console and add this hosting domain to Authorized domains.';
+    }
+
+    return err?.message || 'An error occurred. Please try again.';
+  };
+
   // If already logged in, redirect
   React.useEffect(() => {
     if (user) {
@@ -56,18 +82,7 @@ export const Login: React.FC = () => {
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
-      const code = err?.code || '';
-      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        setError('Invalid email or password. Please try again.');
-      } else if (code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists.');
-      } else if (code === 'auth/weak-password') {
-        setError('Password must be at least 6 characters.');
-      } else if (code === 'auth/invalid-email') {
-        setError('Please enter a valid email address.');
-      } else {
-        setError(err.message || 'An error occurred. Please try again.');
-      }
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -82,7 +97,7 @@ export const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       if (err?.code !== 'auth/popup-closed-by-user') {
-        setError(err.message || 'Google sign-in failed.');
+        setError(getAuthErrorMessage(err));
       }
     } finally {
       setLoading(false);

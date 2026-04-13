@@ -3,38 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>LASUSTECH Repository</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
-      import { getAuth } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-      import { getStorage } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyBOKtoyee4K5aRQ2NbY8W8htej5W5CmQiw",
-        authDomain: "lasustech-repository.firebaseapp.com",
-        projectId: "lasustech-repository",
-        storageBucket: "lasustech-repository.firebasestorage.app",
-        messagingSenderId: "679123900694",
-        appId: "1:679123900694:web:99545245f6a4ef89821837",
-        measurementId: "G-6H55Z174VZ"
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-
-      window.__firebase = {
-        app,
-        analytics,
-        auth: getAuth(app),
-        db: getFirestore(app),
-        storage: getStorage(app),
-      };
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
