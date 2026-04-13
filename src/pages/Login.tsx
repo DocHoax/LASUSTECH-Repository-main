@@ -105,7 +105,7 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-primary relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-3 sm:p-4 bg-primary relative overflow-hidden">
       {/* Background patterns */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <img 
@@ -117,7 +117,7 @@ export const Login: React.FC = () => {
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-      <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-0 overflow-hidden rounded-3xl shadow-2xl bg-white relative z-10 border border-white/20 mx-4">
+      <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-0 overflow-hidden rounded-3xl shadow-2xl bg-white relative z-10 border border-white/20 mx-2 sm:mx-4">
         {/* Branding Column */}
         <div className="hidden md:flex flex-col justify-between p-12 bg-primary text-white relative overflow-hidden">
           <div className="relative z-10">
@@ -157,25 +157,25 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Login Form Column */}
-        <div className="p-6 sm:p-8 md:p-16 flex flex-col justify-center">
+        <div className="p-5 sm:p-8 md:p-16 flex flex-col justify-center">
           <div className="flex flex-col gap-6 md:gap-10">
-            <div className="bg-slate-100 p-1.5 rounded-2xl flex relative">
+            <div className="bg-slate-100 p-1.5 rounded-2xl flex flex-col sm:flex-row relative gap-1 sm:gap-0">
               <button 
                 onClick={() => setLoginType('student')}
-                className={`flex-1 py-3 text-sm font-bold transition-all rounded-xl z-10 ${loginType === 'student' ? 'bg-white text-primary shadow-md' : 'text-slate-500 hover:text-primary'}`}
+                className={`flex-1 py-3 text-xs sm:text-sm font-bold transition-all rounded-xl z-10 ${loginType === 'student' ? 'bg-white text-primary shadow-md' : 'text-slate-500 hover:text-primary'}`}
               >
                 Student Login
               </button>
               <button 
                 onClick={() => setLoginType('admin')}
-                className={`flex-1 py-3 text-sm font-bold transition-all rounded-xl z-10 ${loginType === 'admin' ? 'bg-white text-primary shadow-md' : 'text-slate-500 hover:text-primary'}`}
+                className={`flex-1 py-3 text-xs sm:text-sm font-bold transition-all rounded-xl z-10 ${loginType === 'admin' ? 'bg-white text-primary shadow-md' : 'text-slate-500 hover:text-primary'}`}
               >
                 Staff/Admin Login
               </button>
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-3xl font-headline font-bold text-primary">
+              <h2 className="text-2xl sm:text-3xl font-headline font-bold text-primary">
                 {isSignup ? 'Create Account' : loginType === 'student' ? 'Welcome Back, Scholar' : 'Administrative Access'}
               </h2>
               <p className="text-slate-500 text-sm leading-relaxed">
@@ -188,7 +188,7 @@ export const Login: React.FC = () => {
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100">
+              <div className="flex items-start gap-3 p-3 sm:p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <p className="text-sm font-medium">{error}</p>
               </div>
@@ -284,7 +284,7 @@ export const Login: React.FC = () => {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -317,7 +317,7 @@ export const Login: React.FC = () => {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="flex items-center justify-center gap-3 py-4 px-4 bg-white border-2 border-slate-100 rounded-2xl hover:border-primary/20 hover:bg-slate-50 transition-all text-sm font-bold text-primary shadow-sm disabled:opacity-50"
+              className="flex items-center justify-center gap-3 py-4 px-4 bg-white border-2 border-slate-100 rounded-2xl hover:border-primary/20 hover:bg-slate-50 transition-all text-xs sm:text-sm font-bold text-primary shadow-sm disabled:opacity-50"
             >
               <Mail className="w-5 h-5 text-secondary" />
               Sign in with LASUSTECH Mail

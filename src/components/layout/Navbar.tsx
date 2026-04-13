@@ -35,8 +35,8 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 h-20 px-4 md:px-12 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-4 lg:gap-12">
+      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 h-16 sm:h-20 px-4 sm:px-6 md:px-12 flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-3 sm:gap-4 lg:gap-12 min-w-0">
           <Link to="/" className="group flex items-center gap-2 md:gap-3">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-primary rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
               <GraduationCap className="w-5 h-5 md:w-6 md:h-6 fill-current" />
@@ -70,7 +70,7 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-6">
+        <div className="flex items-center gap-2 md:gap-6 shrink-0">
           <div className="hidden sm:flex items-center gap-2">
             <button className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 transition-all rounded-xl relative">
               <Bell className="w-5 h-5" />
@@ -144,7 +144,7 @@ export const Navbar: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 h-full w-4/5 max-w-sm bg-white z-[70] lg:hidden shadow-2xl flex flex-col p-8"
+              className="fixed right-0 top-0 h-full w-[min(20rem,85vw)] sm:w-4/5 max-w-sm bg-white z-[70] lg:hidden shadow-2xl flex flex-col p-6 sm:p-8"
             >
               <div className="flex justify-between items-center mb-12">
                 <div className="flex items-center gap-3">

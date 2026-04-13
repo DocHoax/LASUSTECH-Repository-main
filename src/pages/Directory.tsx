@@ -22,7 +22,7 @@ export const Directory: React.FC = () => {
   };
 
   return (
-    <div className="space-y-20 pb-20">
+    <div className="space-y-16 sm:space-y-20 pb-16 sm:pb-20 overflow-x-hidden">
       <header className="relative">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute top-1/2 -left-24 w-64 h-64 bg-secondary/5 rounded-full blur-[100px] pointer-events-none"></div>
@@ -33,7 +33,7 @@ export const Directory: React.FC = () => {
           <span className="text-primary">Faculty Directory</span>
         </nav>
         
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 sm:gap-10">
           <div className="max-w-3xl">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -43,15 +43,15 @@ export const Directory: React.FC = () => {
               <Sparkles className="w-3 h-3 text-secondary" />
               Academic Ecosystem
             </motion.div>
-            <h1 className="font-headline text-5xl md:text-7xl font-extrabold text-primary tracking-tight leading-[1.05] mb-8">
+            <h1 className="font-headline text-4xl sm:text-5xl md:text-7xl font-extrabold text-primary tracking-tight leading-[1.05] mb-6 sm:mb-8">
               Institutional <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-secondary">Knowledge Domains</span>
             </h1>
-            <p className="text-slate-500 text-xl max-w-2xl leading-relaxed font-light">
+            <p className="text-slate-500 text-base sm:text-lg lg:text-xl max-w-2xl leading-relaxed font-light">
               Explore the intellectual architecture of LASUSTECH. Navigate through specialized faculties to access verified research, departmental theses, and academic archives.
             </p>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="bg-slate-100/80 backdrop-blur-md p-1.5 rounded-2xl flex shadow-inner border border-slate-200/50">
               <button className="p-3 bg-white shadow-lg shadow-primary/5 rounded-xl text-primary transition-all">
                 <Grid className="w-5 h-5" />
@@ -60,7 +60,7 @@ export const Directory: React.FC = () => {
                 <List className="w-5 h-5" />
               </button>
             </div>
-            <button className="flex items-center gap-3 bg-white border-2 border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary hover:border-primary/20 hover:bg-slate-50 transition-all shadow-sm group">
+            <button className="flex items-center gap-3 bg-white border-2 border-slate-100 px-6 sm:px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary hover:border-primary/20 hover:bg-slate-50 transition-all shadow-sm group">
               <Filter className="w-4 h-4 text-secondary group-hover:rotate-180 transition-transform duration-500" />
               Refine Search
             </button>
@@ -73,7 +73,7 @@ export const Directory: React.FC = () => {
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       ) : (
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
           {faculties.map((faculty, index) => (
             <motion.article 
               key={faculty.id}
@@ -87,7 +87,7 @@ export const Directory: React.FC = () => {
               )}
             >
               <div className={cn(
-                "relative overflow-hidden bg-white rounded-[3rem] h-full p-8 md:p-12 shadow-sm transition-all duration-700 hover:shadow-[0_60px_100px_-20px_rgba(0,0,0,0.12)] hover:-translate-y-3 border border-slate-100 group-hover:border-primary/5",
+                "relative overflow-hidden bg-white rounded-[2rem] sm:rounded-[3rem] h-full p-6 sm:p-8 md:p-12 shadow-sm transition-all duration-700 hover:shadow-[0_60px_100px_-20px_rgba(0,0,0,0.12)] hover:-translate-y-3 border border-slate-100 group-hover:border-primary/5",
               )}>
                 {/* Background Glow */}
                 <div className={cn(
@@ -132,8 +132,8 @@ export const Directory: React.FC = () => {
                         )}
                       </div>
                       
-                      <h3 className="font-headline text-3xl md:text-4xl font-extrabold text-primary mb-5 leading-tight tracking-tight group-hover:text-secondary transition-colors duration-500">{faculty.name}</h3>
-                      <p className="text-slate-500 leading-relaxed mb-10 line-clamp-3 text-lg font-light group-hover:text-slate-600 transition-colors">{faculty.description}</p>
+                      <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-5 leading-tight tracking-tight group-hover:text-secondary transition-colors duration-500">{faculty.name}</h3>
+                      <p className="text-slate-500 leading-relaxed mb-8 sm:mb-10 line-clamp-3 text-base sm:text-lg font-light group-hover:text-slate-600 transition-colors">{faculty.description}</p>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                         <div className="bg-slate-50/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-100 group-hover:bg-white group-hover:border-primary/5 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-primary/5">
@@ -167,19 +167,19 @@ export const Directory: React.FC = () => {
         </section>
       )}
 
-      <section className="mt-40 p-12 md:p-20 bg-primary rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(15,23,42,0.3)] relative overflow-hidden group/cta">
+      <section className="mt-24 sm:mt-32 lg:mt-40 p-8 sm:p-12 md:p-20 bg-primary rounded-[2rem] sm:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(15,23,42,0.3)] relative overflow-hidden group/cta">
         <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-400/20 rounded-full blur-[120px] pointer-events-none group-hover/cta:scale-110 transition-transform duration-1000"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] pointer-events-none group-hover/cta:scale-110 transition-transform duration-1000"></div>
         
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-16 relative z-10">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-10 sm:gap-16 relative z-10">
           <div className="max-w-xl text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-tertiary text-[10px] font-black uppercase tracking-widest rounded-full mb-6 border border-white/10">
               <Search className="w-3 h-3" />
               Global Search
             </div>
-            <h2 className="font-headline text-4xl md:text-6xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">Can't find a specific <br/><span className="text-tertiary">department?</span></h2>
-            <p className="text-blue-100/70 text-xl font-light leading-relaxed">Our repository is vast. Search by keyword, lecturer, or research topic across all institutional faculties and sub-domains.</p>
+            <h2 className="font-headline text-3xl sm:text-4xl md:text-6xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">Can't find a specific <br/><span className="text-tertiary">department?</span></h2>
+            <p className="text-blue-100/70 text-base sm:text-lg lg:text-xl font-light leading-relaxed">Our repository is vast. Search by keyword, lecturer, or research topic across all institutional faculties and sub-domains.</p>
           </div>
           <div className="w-full lg:w-auto flex-1 max-w-xl relative">
             <form onSubmit={handleSearch} className="bg-white/5 backdrop-blur-2xl p-3 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center gap-3 group-focus-within/cta:border-white/20 transition-all">

@@ -26,21 +26,21 @@ export const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-10">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-8 sm:space-y-10">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6">
         <div>
-          <h1 className="text-4xl font-headline font-extrabold text-primary tracking-tight">Curator Dashboard</h1>
-          <p className="text-slate-500 text-lg font-light mt-1">System overview and artifact management control panel.</p>
+          <h1 className="text-3xl sm:text-4xl font-headline font-extrabold text-primary tracking-tight">Curator Dashboard</h1>
+          <p className="text-slate-500 text-base sm:text-lg font-light mt-1">System overview and artifact management control panel.</p>
         </div>
-        <div className="flex gap-4">
-          <button className="px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:border-primary/10 transition-all shadow-sm">Export Report</button>
-          <button className="px-8 py-3 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all active:scale-95">System Audit</button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+          <button className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:border-primary/10 transition-all shadow-sm">Export Report</button>
+          <button className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all active:scale-95">System Audit</button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:shadow-xl transition-all duration-500 relative overflow-hidden">
+          <div key={stat.label} className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100 group hover:shadow-xl transition-all duration-500 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-all group-hover:bg-primary/5"></div>
             <div className="flex items-center justify-between mb-8 relative z-10">
               <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner", stat.bg)}>
@@ -57,7 +57,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+        <div className="lg:col-span-2 bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col">
           <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
             <div>
               <h3 className="font-headline font-extrabold text-xl text-primary">Recent Submissions</h3>
@@ -65,7 +65,7 @@ export const Dashboard: React.FC = () => {
             </div>
             <button className="text-secondary text-xs font-black uppercase tracking-widest hover:underline">View All Records</button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             {loading && recentPapers.length === 0 ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
@@ -126,10 +126,53 @@ export const Dashboard: React.FC = () => {
               </table>
             )}
           </div>
+          <div className="md:hidden divide-y divide-slate-50">
+            {loading && recentPapers.length === 0 ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              </div>
+            ) : (
+              displayPapers.map((paper) => (
+                <div key={paper.id} className="p-5 space-y-4 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner shrink-0">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-primary leading-tight">{paper.title}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{paper.courseCode} • {paper.date}</p>
+                    </div>
+                    <button className="w-10 h-10 bg-white rounded-xl text-slate-300 hover:text-primary hover:shadow-md transition-all flex items-center justify-center shrink-0">
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
+                        <img src={`https://i.pravatar.cc/150?u=${paper.id}`} alt="User" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-600">Student #{Number(paper.id) + 2000}</span>
+                    </div>
+                    <span className={cn(
+                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border",
+                      paper.status === 'published' ? "bg-green-50 text-green-700 border-green-100" :
+                      paper.status === 'under-review' ? "bg-yellow-50 text-yellow-700 border-yellow-100" :
+                      "bg-slate-50 text-slate-500 border-slate-100"
+                    )}>
+                      {paper.status === 'published' ? <CheckCircle2 className="w-3 h-3" /> :
+                       paper.status === 'under-review' ? <Clock className="w-3 h-3" /> :
+                       <AlertCircle className="w-3 h-3" />}
+                      {paper.status || 'Published'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="space-y-8">
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+          <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-headline font-extrabold text-xl text-primary">Verification Queue</h3>
               <span className="w-6 h-6 bg-red-50 text-red-600 rounded-lg flex items-center justify-center text-[10px] font-black">3</span>
@@ -159,11 +202,11 @@ export const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          <div className="bg-secondary text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="bg-secondary text-white p-6 sm:p-8 lg:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
-            <h3 className="font-headline font-extrabold text-2xl mb-3 relative z-10">Storage Alert</h3>
-            <p className="text-white/70 text-sm mb-8 relative z-10 font-light leading-relaxed">Institutional storage is reaching 85% capacity. Consider archiving older sessions to free up space.</p>
-            <div className="w-full bg-white/10 h-2 rounded-full mb-8 relative z-10 overflow-hidden">
+            <h3 className="font-headline font-extrabold text-xl sm:text-2xl mb-3 relative z-10">Storage Alert</h3>
+            <p className="text-white/70 text-sm mb-6 sm:mb-8 relative z-10 font-light leading-relaxed">Institutional storage is reaching 85% capacity. Consider archiving older sessions to free up space.</p>
+            <div className="w-full bg-white/10 h-2 rounded-full mb-6 sm:mb-8 relative z-10 overflow-hidden">
               <div className="bg-tertiary w-[85%] h-full rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)]"></div>
             </div>
             <button className="bg-white text-secondary px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest relative z-10 hover:scale-105 transition-transform shadow-xl">
