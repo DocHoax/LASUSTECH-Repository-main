@@ -210,7 +210,7 @@ export const Home: React.FC = () => {
                       <p className="text-xs font-bold text-primary">PDF • {paper.pages} Pages</p>
                     </div>
                   </div>
-                  <button className="text-secondary font-black text-xs uppercase tracking-widest hover:underline">View</button>
+                  <button onClick={() => navigate(`/paper/${paper.id}`)} className="text-secondary font-black text-xs uppercase tracking-widest hover:underline">View</button>
                 </div>
               </div>
             ))}
@@ -234,7 +234,7 @@ export const Home: React.FC = () => {
               >
                 Upload Now
               </button>
-              <button className="w-full sm:w-auto bg-white/5 border border-white/10 px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold text-white hover:bg-white/10 transition-all">
+              <button onClick={() => navigate('/upload')} className="w-full sm:w-auto bg-white/5 border border-white/10 px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold text-white hover:bg-white/10 transition-all">
                 Learn Ethics
               </button>
             </div>

@@ -13,8 +13,12 @@ import {
 import { useRecentPapers } from '../hooks/useFirestore';
 import { RECENT_PAPERS } from '../constants';
 import { cn } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const queueRef = React.useRef<HTMLDivElement | null>(null);
+  const storageRef = React.useRef<HTMLDivElement | null>(null);
   const { papers: recentPapers, loading } = useRecentPapers(3);
   const displayPapers = recentPapers.length > 0 ? recentPapers : RECENT_PAPERS;
 
@@ -25,6 +29,20 @@ export const Dashboard: React.FC = () => {
     { label: 'Monthly Growth', value: '+12.4%', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50', trend: 'Steady' },
   ];
 
+  const downloadCsv = () => {
+    const rows = [['Title', 'Course Code', 'Level', 'Year', 'Status']].concat(
+      displayPapers.map((paper) => [paper.title, paper.courseCode, paper.level, paper.year, paper.status || 'published'])
+    );
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'lasustech-repository-report.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-8 sm:space-y-10">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6">
@@ -33,8 +51,8 @@ export const Dashboard: React.FC = () => {
           <p className="text-slate-500 text-base sm:text-lg font-light mt-1">System overview and artifact management control panel.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
-          <button className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:border-primary/10 transition-all shadow-sm">Export Report</button>
-          <button className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all active:scale-95">System Audit</button>
+          <button onClick={downloadCsv} className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:border-primary/10 transition-all shadow-sm">Export Report</button>
+          <button onClick={() => storageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all active:scale-95">System Audit</button>
         </div>
       </header>
 
@@ -63,7 +81,7 @@ export const Dashboard: React.FC = () => {
               <h3 className="font-headline font-extrabold text-xl text-primary">Recent Submissions</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Awaiting verification</p>
             </div>
-            <button className="text-secondary text-xs font-black uppercase tracking-widest hover:underline">View All Records</button>
+            <button onClick={() => navigate('/search')} className="text-secondary text-xs font-black uppercase tracking-widest hover:underline">View All Records</button>
           </div>
           <div className="hidden md:block overflow-x-auto">
             {loading && recentPapers.length === 0 ? (
@@ -116,7 +134,7 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <button className="w-10 h-10 bg-white rounded-xl text-slate-300 hover:text-primary hover:shadow-md transition-all flex items-center justify-center">
+                        <button onClick={() => navigate(`/paper/${paper.id}`)} className="w-10 h-10 bg-white rounded-xl text-slate-300 hover:text-primary hover:shadow-md transition-all flex items-center justify-center">
                           <MoreVertical className="w-5 h-5" />
                         </button>
                       </td>
@@ -142,7 +160,7 @@ export const Dashboard: React.FC = () => {
                       <p className="text-sm font-bold text-primary leading-tight">{paper.title}</p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{paper.courseCode} • {paper.date}</p>
                     </div>
-                    <button className="w-10 h-10 bg-white rounded-xl text-slate-300 hover:text-primary hover:shadow-md transition-all flex items-center justify-center shrink-0">
+                    <button onClick={() => navigate(`/paper/${paper.id}`)} className="w-10 h-10 bg-white rounded-xl text-slate-300 hover:text-primary hover:shadow-md transition-all flex items-center justify-center shrink-0">
                       <MoreVertical className="w-5 h-5" />
                     </button>
                   </div>
@@ -172,7 +190,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <div className="space-y-8">
-          <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100">
+          <div ref={queueRef} className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-headline font-extrabold text-xl text-primary">Verification Queue</h3>
               <span className="w-6 h-6 bg-red-50 text-red-600 rounded-lg flex items-center justify-center text-[10px] font-black">3</span>
@@ -197,19 +215,19 @@ export const Dashboard: React.FC = () => {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-8 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-sm">
+            <button onClick={() => queueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="w-full mt-8 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-sm">
               Open Full Queue
             </button>
           </div>
 
-          <div className="bg-secondary text-white p-6 sm:p-8 lg:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+          <div ref={storageRef} className="bg-secondary text-white p-6 sm:p-8 lg:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
             <h3 className="font-headline font-extrabold text-xl sm:text-2xl mb-3 relative z-10">Storage Alert</h3>
             <p className="text-white/70 text-sm mb-6 sm:mb-8 relative z-10 font-light leading-relaxed">Institutional storage is reaching 85% capacity. Consider archiving older sessions to free up space.</p>
             <div className="w-full bg-white/10 h-2 rounded-full mb-6 sm:mb-8 relative z-10 overflow-hidden">
               <div className="bg-tertiary w-[85%] h-full rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)]"></div>
             </div>
-            <button className="bg-white text-secondary px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest relative z-10 hover:scale-105 transition-transform shadow-xl">
+            <button onClick={() => storageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="bg-white text-secondary px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest relative z-10 hover:scale-105 transition-transform shadow-xl">
               Manage Storage
             </button>
             <Database className="absolute -right-12 -bottom-12 w-48 h-48 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-700" />

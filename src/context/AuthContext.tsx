@@ -31,6 +31,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  updateUserProfile: (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -131,6 +132,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserProfile = async (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => {
+    if (!auth || !db || !auth.currentUser) {
+      throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    }
+
+    const uid = auth.currentUser.uid;
+    const docRef = doc(db, 'users', uid);
+    await setDoc(docRef, updates, { merge: true });
+    setUserProfile((current) => (current ? ({ ...current, ...updates } as UserProfile) : null));
+    await fetchUserProfile(uid);
+  };
+
   const logout = async () => {
     if (auth) await signOut(auth);
     setUser(null);
@@ -138,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, updateUserProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

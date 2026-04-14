@@ -22,6 +22,7 @@ export const Detail: React.FC = () => {
   const navigate = useNavigate();
   const { paperId, facultyId } = useParams();
   const { paper, loading } = usePaper(paperId);
+  const [isSaved, setIsSaved] = React.useState(false);
 
   // Fallback display data when no paper is loaded from Firestore
   const displayData = paper || {
@@ -44,6 +45,41 @@ export const Detail: React.FC = () => {
       if (paper.id) await incrementDownload(paper.id);
       window.open(paper.fileUrl, '_blank');
     }
+  };
+
+  React.useEffect(() => {
+    const savedItems = JSON.parse(window.localStorage.getItem('saved-papers') || '[]') as string[];
+    setIsSaved(savedItems.includes(displayData.id));
+  }, [displayData.id]);
+
+  const handleExpandPreview = () => {
+    if (displayData.fileUrl) {
+      window.open(displayData.fileUrl, '_blank');
+      return;
+    }
+
+    window.alert('Preview is only available when a file has been uploaded for this paper.');
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      await navigator.share({ title: displayData.title, url: shareUrl });
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareUrl);
+    window.alert('Link copied to clipboard.');
+  };
+
+  const handleSave = () => {
+    const savedItems = JSON.parse(window.localStorage.getItem('saved-papers') || '[]') as string[];
+    const nextItems = savedItems.includes(displayData.id)
+      ? savedItems.filter((id) => id !== displayData.id)
+      : [...savedItems, displayData.id];
+
+    window.localStorage.setItem('saved-papers', JSON.stringify(nextItems));
+    setIsSaved(nextItems.includes(displayData.id));
   };
 
   return (
@@ -90,7 +126,7 @@ export const Detail: React.FC = () => {
                 </div>
                 <h3 className="font-headline text-lg sm:text-xl md:text-2xl font-extrabold text-primary mb-2 md:mb-4">Secure PDF Preview</h3>
                 <p className="text-slate-500 text-sm md:text-base max-w-sm mx-auto mb-6 md:mb-10 leading-relaxed font-light">You are viewing a secure, watermarked preview of the {displayData.year} academic session past question paper.</p>
-                <button className="px-6 sm:px-8 md:px-10 py-3 md:py-4 bg-white text-primary border-2 border-slate-100 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:shadow-2xl hover:border-primary/10 transition-all flex items-center gap-3 active:scale-95">
+                <button onClick={handleExpandPreview} className="px-6 sm:px-8 md:px-10 py-3 md:py-4 bg-white text-primary border-2 border-slate-100 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:shadow-2xl hover:border-primary/10 transition-all flex items-center gap-3 active:scale-95">
                   <ZoomIn className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
                   Expand Preview
                 </button>
@@ -129,11 +165,11 @@ export const Detail: React.FC = () => {
                 Download PDF ({displayData.pages} Pages)
               </button>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button className="py-4 px-4 bg-slate-50 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
+                <button onClick={handleShare} className="py-4 px-4 bg-slate-50 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
                   <Share2 className="w-4 h-4" /> Share
                 </button>
-                <button className="py-4 px-4 bg-slate-50 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
-                  <Bookmark className="w-4 h-4" /> Save
+                <button onClick={handleSave} className="py-4 px-4 bg-slate-50 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
+                  <Bookmark className="w-4 h-4" /> {isSaved ? 'Saved' : 'Save'}
                 </button>
               </div>
             </div>
@@ -167,7 +203,7 @@ export const Detail: React.FC = () => {
               <h4 className="font-headline font-extrabold text-xl text-primary px-4">Related Papers</h4>
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <button key={i} className="w-full text-left bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group border border-slate-50">
+                  <button key={i} onClick={() => navigate(`/search?q=${encodeURIComponent(displayData.courseCode)}`)} className="w-full text-left bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group border border-slate-50">
                     <p className="text-[10px] text-secondary font-black uppercase tracking-widest mb-2">{displayData.courseCode} • 2021</p>
                     <h5 className="font-bold text-primary leading-tight group-hover:text-secondary transition-colors text-lg">Data Structures Mid-Semester Quiz</h5>
                     <div className="flex items-center gap-5 mt-4">

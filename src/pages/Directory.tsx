@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 export const Directory: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const { faculties: firestoreFaculties, loading } = useFaculties();
 
   // Fallback to constants if Firestore has no data
@@ -19,6 +20,10 @@ export const Directory: React.FC = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  const handleRefineSearch = () => {
+    navigate('/search');
   };
 
   return (
@@ -53,14 +58,14 @@ export const Directory: React.FC = () => {
           
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="bg-slate-100/80 backdrop-blur-md p-1.5 rounded-2xl flex shadow-inner border border-slate-200/50">
-              <button className="p-3 bg-white shadow-lg shadow-primary/5 rounded-xl text-primary transition-all">
+              <button onClick={() => setViewMode('grid')} className={cn("p-3 rounded-xl transition-all", viewMode === 'grid' ? 'bg-white text-primary shadow-lg shadow-primary/5' : 'text-slate-400 hover:text-primary')}>
                 <Grid className="w-5 h-5" />
               </button>
-              <button className="p-3 text-slate-400 hover:text-primary transition-all">
+              <button onClick={() => setViewMode('list')} className={cn("p-3 rounded-xl transition-all", viewMode === 'list' ? 'bg-white text-primary shadow-lg shadow-primary/5' : 'text-slate-400 hover:text-primary')}>
                 <List className="w-5 h-5" />
               </button>
             </div>
-            <button className="flex items-center gap-3 bg-white border-2 border-slate-100 px-6 sm:px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary hover:border-primary/20 hover:bg-slate-50 transition-all shadow-sm group">
+            <button onClick={handleRefineSearch} className="flex items-center gap-3 bg-white border-2 border-slate-100 px-6 sm:px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary hover:border-primary/20 hover:bg-slate-50 transition-all shadow-sm group">
               <Filter className="w-4 h-4 text-secondary group-hover:rotate-180 transition-transform duration-500" />
               Refine Search
             </button>
@@ -73,7 +78,7 @@ export const Directory: React.FC = () => {
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       ) : (
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+        <section className={cn("grid grid-cols-1 gap-6 sm:gap-8", viewMode === 'grid' ? 'lg:grid-cols-12' : 'lg:grid-cols-1')}>
           {faculties.map((faculty, index) => (
             <motion.article 
               key={faculty.id}
@@ -83,7 +88,7 @@ export const Directory: React.FC = () => {
               onClick={() => navigate(`/directory/${faculty.id}`)}
               className={cn(
                 "group cursor-pointer transition-all duration-700",
-                faculty.featured ? "lg:col-span-8" : "lg:col-span-4"
+                viewMode === 'grid' ? (faculty.featured ? "lg:col-span-8" : "lg:col-span-4") : "lg:col-span-1"
               )}
             >
               <div className={cn(
@@ -97,7 +102,7 @@ export const Directory: React.FC = () => {
 
                 <div className={cn(
                   "flex flex-col gap-8 md:gap-12 relative z-10",
-                  faculty.featured ? "md:flex-row" : "flex-col"
+                  viewMode === 'list' ? "md:flex-row" : faculty.featured ? "md:flex-row" : "flex-col"
                 )}>
                   <div className={cn(
                     "aspect-square rounded-[2.5rem] overflow-hidden shrink-0 relative shadow-2xl ring-8 ring-slate-50 group-hover:ring-white transition-all duration-700",

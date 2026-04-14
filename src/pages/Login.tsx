@@ -12,6 +12,8 @@ import {
   User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { auth } from '../lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -100,6 +102,30 @@ export const Login: React.FC = () => {
       if (err?.code !== 'auth/popup-closed-by-user') {
         setError(getAuthErrorMessage(err));
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    setError(null);
+
+    if (!email.trim()) {
+      setError('Enter your email address first so we can send the reset link.');
+      return;
+    }
+
+    if (!auth) {
+      setError('Firebase Authentication is not configured.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setError('Password reset email sent. Check your inbox.');
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -286,7 +312,7 @@ export const Login: React.FC = () => {
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[11px] font-bold text-primary uppercase tracking-widest opacity-60">Password</label>
                   {!isSignup && (
-                    <button type="button" className="text-[11px] font-bold text-secondary hover:underline transition-all">Reset Password?</button>
+                    <button type="button" onClick={handlePasswordReset} className="text-[11px] font-bold text-secondary hover:underline transition-all">Reset Password?</button>
                   )}
                 </div>
                 <div className="relative group">

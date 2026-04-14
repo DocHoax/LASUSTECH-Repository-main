@@ -48,6 +48,10 @@ export const Upload: React.FC = () => {
     }
   };
 
+  const handleBrowseFiles = () => {
+    document.getElementById('file-input')?.click();
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -223,7 +227,7 @@ export const Upload: React.FC = () => {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => document.getElementById('file-input')?.click()}
+              onClick={handleBrowseFiles}
             >
               <input
                 id="file-input"
@@ -238,7 +242,7 @@ export const Upload: React.FC = () => {
               </div>
               <p className="text-primary font-bold text-base sm:text-lg md:text-xl mb-2 relative z-10 text-center">Drag and drop your documents here</p>
               <p className="text-slate-400 font-medium mb-6 sm:mb-8 relative z-10 text-sm sm:text-base text-center">PDF, DOCX, or ZIP up to 50MB</p>
-              <button type="button" className="bg-primary text-white px-6 sm:px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-sm hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all flex items-center gap-3 relative z-10">
+              <button type="button" onClick={handleBrowseFiles} className="bg-primary text-white px-6 sm:px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-sm hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all flex items-center gap-3 relative z-10">
                 <Paperclip className="w-5 h-5" />
                 Browse Files
               </button>
@@ -457,7 +461,7 @@ export const Upload: React.FC = () => {
             </div>
             <h4 className="font-bold text-primary mb-2">Need Assistance?</h4>
             <p className="text-xs text-slate-500 leading-relaxed mb-6">Our administrative team is available to help with complex uploads or copyright questions.</p>
-            <button className="text-xs font-black uppercase tracking-widest text-secondary hover:underline">Contact Support</button>
+            <button type="button" onClick={() => window.location.href = 'mailto:support@lasustech.edu.ng'} className="text-xs font-black uppercase tracking-widest text-secondary hover:underline">Contact Support</button>
           </div>
         </div>
       </div>

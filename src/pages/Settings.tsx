@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   User, 
   Bell, 
@@ -14,8 +15,15 @@ import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 
 export const Settings: React.FC = () => {
+  const navigate = useNavigate();
   const { user, userProfile } = useAuth();
+  const { updateUserProfile } = useAuth();
   const [activeTab, setActiveTab] = React.useState('profile');
+  const [saving, setSaving] = React.useState(false);
+  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [profileName, setProfileName] = React.useState('');
+  const [profileEmail, setProfileEmail] = React.useState('');
+  const [profileDepartment, setProfileDepartment] = React.useState('Computer Science');
 
   const tabs = [
     { id: 'profile', label: 'Profile Info', icon: User },
@@ -30,6 +38,52 @@ export const Settings: React.FC = () => {
   const displayMatric = userProfile?.matricNumber || '';
   const displayDepartment = userProfile?.department || 'Computer Science';
   const displayRole = userProfile?.role || 'student';
+
+  React.useEffect(() => {
+    setProfileName(displayName);
+    setProfileEmail(displayEmail);
+    setProfileDepartment(displayDepartment);
+  }, [displayName, displayEmail, displayDepartment]);
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    setStatusMessage(null);
+    try {
+      await updateUserProfile({
+        displayName: profileName.trim() || displayName,
+        email: profileEmail.trim() || displayEmail,
+        department: profileDepartment,
+      });
+      setStatusMessage('Profile updated successfully.');
+    } catch (error: any) {
+      setStatusMessage(error?.message || 'Unable to save profile changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setProfileName(displayName);
+    setProfileEmail(displayEmail);
+    setProfileDepartment(displayDepartment);
+    setStatusMessage('Changes discarded.');
+  };
+
+  const handleAvatarEdit = async () => {
+    const nextUrl = window.prompt('Enter an avatar image URL', userProfile?.avatarUrl || '');
+    if (nextUrl === null) return;
+
+    setSaving(true);
+    setStatusMessage(null);
+    try {
+      await updateUserProfile({ avatarUrl: nextUrl.trim() });
+      setStatusMessage('Avatar updated successfully.');
+    } catch (error: any) {
+      setStatusMessage(error?.message || 'Unable to update avatar.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 sm:space-y-12">
@@ -67,7 +121,7 @@ export const Settings: React.FC = () => {
           </div>
           
           <div className="pt-6 px-4">
-            <button className="w-full flex items-center gap-4 p-5 text-slate-400 hover:text-primary transition-all text-xs font-black uppercase tracking-widest bg-white rounded-2xl border border-transparent hover:border-slate-100 shadow-sm">
+            <button type="button" onClick={() => window.location.href = 'mailto:support@lasustech.edu.ng'} className="w-full flex items-center gap-4 p-5 text-slate-400 hover:text-primary transition-all text-xs font-black uppercase tracking-widest bg-white rounded-2xl border border-transparent hover:border-slate-100 shadow-sm">
               <HelpCircle className="w-5 h-5 text-secondary" />
               Help & Support
             </button>
@@ -95,7 +149,7 @@ export const Settings: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <button className="absolute -bottom-2 -right-2 p-3 bg-primary text-white rounded-2xl shadow-2xl hover:scale-110 transition-transform active:scale-95">
+                  <button type="button" onClick={handleAvatarEdit} className="absolute -bottom-2 -right-2 p-3 bg-primary text-white rounded-2xl shadow-2xl hover:scale-110 transition-transform active:scale-95">
                     <Camera className="w-5 h-5" />
                   </button>
                 </div>
@@ -114,11 +168,11 @@ export const Settings: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
-                  <input type="text" defaultValue={displayName} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl transition-all font-bold text-primary" />
+                  <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl transition-all font-bold text-primary" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Institutional Email</label>
-                  <input type="email" defaultValue={displayEmail} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl transition-all font-bold text-primary" />
+                  <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl transition-all font-bold text-primary" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Matric Number</label>
@@ -129,7 +183,7 @@ export const Settings: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Department</label>
-                  <select className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl transition-all font-bold text-primary appearance-none">
+                  <select value={profileDepartment} onChange={(e) => setProfileDepartment(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl transition-all font-bold text-primary appearance-none">
                     <option>Computer Science</option>
                     <option>Mechanical Engineering</option>
                     <option>Accounting</option>
@@ -138,9 +192,17 @@ export const Settings: React.FC = () => {
               </div>
             </section>
 
+            {statusMessage && (
+              <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4 text-sm font-medium text-slate-600">
+                {statusMessage}
+              </div>
+            )}
+
             <div className="pt-8 sm:pt-10 border-t border-slate-50 flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
-              <button className="px-8 sm:px-10 py-4 text-slate-400 font-black uppercase tracking-widest hover:text-primary hover:bg-slate-50 rounded-2xl transition-all text-xs">Discard Changes</button>
-              <button className="px-10 sm:px-12 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all text-xs active:scale-95">Save Profile</button>
+              <button type="button" onClick={handleDiscardChanges} className="px-8 sm:px-10 py-4 text-slate-400 font-black uppercase tracking-widest hover:text-primary hover:bg-slate-50 rounded-2xl transition-all text-xs">Discard Changes</button>
+              <button type="button" onClick={handleSaveProfile} disabled={saving} className="px-10 sm:px-12 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all text-xs active:scale-95 disabled:opacity-60">
+                {saving ? 'Saving...' : 'Save Profile'}
+              </button>
             </div>
           </div>
         </main>
