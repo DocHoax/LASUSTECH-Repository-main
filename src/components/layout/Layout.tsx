@@ -12,7 +12,7 @@ export const Layout: React.FC = () => {
     <div className="min-h-screen bg-surface">
       <Navbar />
       
-      <div className="flex flex-col lg:flex-row pt-16 sm:pt-20">
+      <div className="flex flex-col lg:pl-72 pt-16 sm:pt-20">
         <Sidebar />
         
         <main className="flex-1 w-full px-4 sm:px-6 md:px-8 lg:px-12 py-6 sm:py-8 max-w-screen-2xl mx-auto overflow-x-hidden">

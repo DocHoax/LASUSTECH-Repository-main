@@ -32,7 +32,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="h-screen w-72 sticky top-0 hidden lg:flex flex-col py-10 gap-8 bg-white border-r border-slate-100">
+    <aside className="fixed left-0 top-16 sm:top-20 bottom-0 z-40 w-72 hidden lg:flex flex-col py-10 gap-8 bg-white border-r border-slate-100 overflow-y-auto">
       <div className="px-8">
         <button 
           onClick={() => navigate('/')}
