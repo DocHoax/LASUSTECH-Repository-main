@@ -92,6 +92,10 @@ export const Upload: React.FC = () => {
       setError('You must be logged in to upload.');
       return;
     }
+    if (!db) {
+      setError('Firebase Firestore is not configured. Please check your project settings.');
+      return;
+    }
 
     setSubmitting(true);
     try {
