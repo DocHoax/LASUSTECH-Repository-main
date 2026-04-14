@@ -29,6 +29,7 @@ export const Settings: React.FC = () => {
   const displayEmail = userProfile?.email || user?.email || '';
   const displayMatric = userProfile?.matricNumber || '';
   const displayDepartment = userProfile?.department || 'Computer Science';
+  const displayRole = userProfile?.role || 'student';
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 sm:space-y-12">
@@ -100,10 +101,10 @@ export const Settings: React.FC = () => {
                 </div>
                 <div className="text-center md:text-left max-w-full">
                   <h3 className="text-2xl sm:text-3xl font-black text-primary tracking-tight break-words">{displayName}</h3>
-                  <p className="text-base sm:text-lg text-slate-500 font-light mt-1">{displayDepartment} • {userProfile?.role === 'admin' ? 'Admin' : '400 Level'}</p>
+                  <p className="text-base sm:text-lg text-slate-500 font-light mt-1">{displayDepartment} • {displayRole === 'admin' ? 'Admin' : displayRole === 'staff' ? 'Staff' : 'Student'}</p>
                   <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
                     <span className="px-4 py-1.5 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-100">
-                      {user ? 'Verified' : 'Unverified'} {userProfile?.role === 'admin' ? 'Admin' : 'Student'}
+                      {user ? 'Verified' : 'Unverified'} {displayRole === 'admin' ? 'Admin' : displayRole === 'staff' ? 'Staff' : 'Student'}
                     </span>
                     <span className="px-4 py-1.5 bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-100">Contributor</span>
                   </div>

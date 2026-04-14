@@ -106,7 +106,7 @@ export const Navbar: React.FC = () => {
                   {userProfile?.displayName || user.email?.split('@')[0] || 'User'}
                 </p>
                 <p className="text-[10px] text-slate-400 font-bold mt-1">
-                  {userProfile?.role === 'admin' ? 'Admin' : 'Verified Student'}
+                  {userProfile?.role === 'admin' ? 'Admin' : userProfile?.role === 'staff' ? 'Staff' : 'Student'}
                 </p>
               </div>
             </button>

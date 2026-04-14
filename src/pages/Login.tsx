@@ -19,7 +19,7 @@ export const Login: React.FC = () => {
   const { login, signup, loginWithGoogle, user } = useAuth();
 
   const [showPassword, setShowPassword] = React.useState(false);
-  const [loginType, setLoginType] = React.useState<'student' | 'admin'>('student');
+  const [loginType, setLoginType] = React.useState<'student' | 'staff' | 'admin'>('student');
   const [isSignup, setIsSignup] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -29,6 +29,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = React.useState('');
   const [displayName, setDisplayName] = React.useState('');
   const [matricNumber, setMatricNumber] = React.useState('');
+  const [accountRole, setAccountRole] = React.useState<'student' | 'staff' | 'admin'>('student');
 
   const getAuthErrorMessage = (err: any) => {
     const code = err?.code || '';
@@ -74,7 +75,7 @@ export const Login: React.FC = () => {
         await signup(email, password, {
           displayName,
           matricNumber,
-          role: loginType === 'admin' ? 'admin' : 'student',
+          role: accountRole,
         });
       } else {
         await login(email, password);
@@ -167,23 +168,31 @@ export const Login: React.FC = () => {
                 Student Login
               </button>
               <button 
+                onClick={() => setLoginType('staff')}
+                className={`flex-1 py-3 text-xs sm:text-sm font-bold transition-all rounded-xl z-10 ${loginType === 'staff' ? 'bg-white text-primary shadow-md' : 'text-slate-500 hover:text-primary'}`}
+              >
+                Staff Login
+              </button>
+              <button 
                 onClick={() => setLoginType('admin')}
                 className={`flex-1 py-3 text-xs sm:text-sm font-bold transition-all rounded-xl z-10 ${loginType === 'admin' ? 'bg-white text-primary shadow-md' : 'text-slate-500 hover:text-primary'}`}
               >
-                Staff/Admin Login
+                Admin Login
               </button>
             </div>
 
             <div className="space-y-3">
               <h2 className="text-2xl sm:text-3xl font-headline font-bold text-primary">
-                {isSignup ? 'Create Account' : loginType === 'student' ? 'Welcome Back, Scholar' : 'Administrative Access'}
+                {isSignup ? 'Create Account' : loginType === 'student' ? 'Welcome Back, Scholar' : loginType === 'staff' ? 'Welcome Back, Staff' : 'Administrative Access'}
               </h2>
               <p className="text-slate-500 text-sm leading-relaxed">
                 {isSignup 
-                  ? 'Register your account to start contributing to the institutional archive.'
+                  ? 'Register your account to start contributing past questions to the institutional archive.'
                   : loginType === 'student' 
                     ? 'Please enter your email and password to access your academic vault.' 
-                    : 'Authorized personnel only. Please provide your staff credentials to access the management portal.'}
+                    : loginType === 'staff'
+                      ? 'Please enter your staff credentials to access the management portal.'
+                      : 'Authorized personnel only. Please provide your admin credentials to access the management portal.'}
               </p>
             </div>
 
@@ -195,6 +204,28 @@ export const Login: React.FC = () => {
             )}
 
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {isSignup && (
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-primary uppercase tracking-widest ml-1 opacity-60">Account Type</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: 'student', label: 'Student' },
+                      { id: 'staff', label: 'Staff' },
+                      { id: 'admin', label: 'Admin' },
+                    ].map((role) => (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => setAccountRole(role.id as 'student' | 'staff' | 'admin')}
+                        className={`py-3 rounded-2xl border text-xs font-black uppercase tracking-widest transition-all ${accountRole === role.id ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-slate-50 text-slate-400 border-transparent hover:border-slate-100 hover:text-primary'}`}
+                      >
+                        {role.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {isSignup && (
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-primary uppercase tracking-widest ml-1 opacity-60">Full Name</label>
@@ -226,14 +257,14 @@ export const Login: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={loginType === 'student' ? "e.g. student@lasustech.edu.ng" : "e.g. admin@lasustech.edu.ng"}
+                    placeholder={loginType === 'student' ? "e.g. student@lasustech.edu.ng" : loginType === 'staff' ? "e.g. staff@lasustech.edu.ng" : "e.g. admin@lasustech.edu.ng"}
                     required
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-primary font-semibold placeholder:text-slate-300"
                   />
                 </div>
               </div>
 
-              {isSignup && loginType === 'student' && (
+              {isSignup && accountRole === 'student' && (
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-primary uppercase tracking-widest ml-1 opacity-60">Matriculation Number</label>
                   <div className="relative group">
@@ -290,7 +321,7 @@ export const Login: React.FC = () => {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    {isSignup ? 'Create Account' : loginType === 'student' ? 'Enter Academic Vault' : 'Secure Admin Entry'}
+                    {isSignup ? `Create ${accountRole === 'student' ? 'Student' : accountRole === 'staff' ? 'Staff' : 'Admin'} Account` : loginType === 'student' ? 'Enter Academic Vault' : loginType === 'staff' ? 'Enter Staff Portal' : 'Secure Admin Entry'}
                     <ShieldCheck className="w-5 h-5" />
                   </>
                 )}

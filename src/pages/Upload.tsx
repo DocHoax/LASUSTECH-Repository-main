@@ -10,6 +10,7 @@ export const Upload: React.FC = () => {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
   const { progress, uploading, uploadFile, resetUpload } = useFileUpload();
+  const contributorRole = userProfile?.role || 'student';
 
   // Form state
   const [file, setFile] = React.useState<File | null>(null);
@@ -113,6 +114,8 @@ export const Upload: React.FC = () => {
         fileUrl: downloadUrl,
         uploadedBy: user.uid,
         uploaderName: userProfile?.displayName || user.email,
+        contributorRole,
+        contributorEmail: userProfile?.email || user.email || '',
         facultyId: userProfile?.faculty || '',
         departmentId: userProfile?.department || '',
         createdAt: serverTimestamp(),
@@ -176,6 +179,15 @@ export const Upload: React.FC = () => {
           <p className="text-slate-500 text-base sm:text-lg lg:text-xl font-light leading-relaxed">Your contributions empower future researchers and students. Please ensure all documents meet the institution's academic integrity standards.</p>
         </div>
       </header>
+
+      <div className="flex flex-wrap items-center gap-3 max-w-4xl">
+        <span className="px-4 py-1.5 rounded-full bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10">
+          {contributorRole === 'admin' ? 'Admin' : contributorRole === 'staff' ? 'Staff' : 'Student'} Contributor
+        </span>
+        <span className="px-4 py-1.5 rounded-full bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-100">
+          Past question uploads go to review before publication
+        </span>
+      </div>
 
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100 max-w-4xl">
@@ -342,6 +354,15 @@ export const Upload: React.FC = () => {
                   <option>2021/2022</option>
                   <option>2020/2021</option>
                 </select>
+              </div>
+              <div className="space-y-3 md:col-span-2">
+                <label className="text-[11px] font-black text-primary uppercase tracking-widest ml-1 opacity-60">Contribution Note</label>
+                <textarea
+                  value={''}
+                  readOnly
+                  className="w-full min-h-28 bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm font-semibold text-slate-400 resize-none"
+                  placeholder="Past questions, lecture notes, and supporting material are accepted from students, staff, and admins."
+                />
               </div>
             </div>
           </section>

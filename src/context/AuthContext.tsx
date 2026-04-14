@@ -16,7 +16,7 @@ export interface UserProfile {
   displayName: string;
   email: string;
   matricNumber: string;
-  role: 'student' | 'admin';
+  role: 'student' | 'staff' | 'admin';
   department: string;
   faculty: string;
   avatarUrl: string;
