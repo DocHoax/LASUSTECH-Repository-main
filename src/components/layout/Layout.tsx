@@ -4,6 +4,7 @@ import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation } from 'react-router-dom';
+import { openMailto } from '../../lib/utils';
 
 export const Layout: React.FC = () => {
   const location = useLocation();
@@ -46,10 +47,10 @@ export const Layout: React.FC = () => {
           <div>
             <h4 className="font-bold mb-6 text-tertiary uppercase tracking-widest text-xs">Support</h4>
             <ul className="space-y-4 text-sm text-blue-100">
-              <li><button type="button" onClick={() => window.location.href = 'mailto:support@lasustech.edu.ng'} className="hover:text-white transition-colors">Help Center</button></li>
-              <li><button type="button" onClick={() => window.alert('Terms of Service will be added to the site content soon.')} className="hover:text-white transition-colors">Terms of Service</button></li>
-              <li><button type="button" onClick={() => window.alert('Privacy Policy will be added to the site content soon.')} className="hover:text-white transition-colors">Privacy Policy</button></li>
-              <li><button type="button" onClick={() => window.location.href = 'mailto:admin@lasustech.edu.ng'} className="hover:text-white transition-colors">Contact Admin</button></li>
+              <li><button type="button" onClick={() => openMailto('support@lasustech.edu.ng', 'LASUSTECH Repository Help Center')} className="hover:text-white transition-colors">Help Center</button></li>
+              <li><button type="button" onClick={() => openMailto('support@lasustech.edu.ng', 'Request for LASUSTECH Repository Terms of Service')} className="hover:text-white transition-colors">Terms of Service</button></li>
+              <li><button type="button" onClick={() => openMailto('support@lasustech.edu.ng', 'Request for LASUSTECH Repository Privacy Policy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
+              <li><button type="button" onClick={() => openMailto('admin@lasustech.edu.ng', 'LASUSTECH Repository Contact Admin')} className="hover:text-white transition-colors">Contact Admin</button></li>
             </ul>
           </div>
         </div>
@@ -72,7 +73,7 @@ const FooterLinks: React.FC = () => {
       <li><button onClick={() => navigate('/')} className="hover:text-white transition-colors">Home</button></li>
       <li><button onClick={() => navigate('/directory')} className="hover:text-white transition-colors">Faculty Directory</button></li>
       <li><button onClick={() => navigate('/upload')} className="hover:text-white transition-colors">Contribute</button></li>
-      <li><button type="button" onClick={() => window.alert('Academic calendar is coming soon.')} className="hover:text-white transition-colors">Academic Calendar</button></li>
+      <li><button type="button" onClick={() => openMailto('support@lasustech.edu.ng', 'Academic Calendar Request')} className="hover:text-white transition-colors">Academic Calendar</button></li>
     </ul>
   );
 };

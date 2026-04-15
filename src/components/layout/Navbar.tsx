@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Search, Bell, Settings, Menu, GraduationCap, ArrowRight, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { openMailto } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 
 export const Navbar: React.FC = () => {
@@ -72,7 +73,11 @@ export const Navbar: React.FC = () => {
 
         <div className="flex items-center gap-2 md:gap-6 shrink-0">
           <div className="hidden sm:flex items-center gap-2">
-            <button className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 transition-all rounded-xl relative">
+            <button
+              type="button"
+              onClick={() => openMailto('support@lasustech.edu.ng', 'Repository Alerts')}
+              className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 transition-all rounded-xl relative"
+            >
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-white"></span>
             </button>

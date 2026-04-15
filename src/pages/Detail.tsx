@@ -16,7 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { usePaper, incrementDownload } from '../hooks/useFirestore';
-import { cn } from '../lib/utils';
+import { cn, openMailto } from '../lib/utils';
 
 export const Detail: React.FC = () => {
   const navigate = useNavigate();
@@ -58,7 +58,10 @@ export const Detail: React.FC = () => {
       return;
     }
 
-    window.alert('Preview is only available when a file has been uploaded for this paper.');
+    openMailto(
+      'support@lasustech.edu.ng',
+      `Preview request for ${displayData.courseCode}`
+    );
   };
 
   const handleShare = async () => {
@@ -69,7 +72,6 @@ export const Detail: React.FC = () => {
     }
 
     await navigator.clipboard.writeText(shareUrl);
-    window.alert('Link copied to clipboard.');
   };
 
   const handleSave = () => {

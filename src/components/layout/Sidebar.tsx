@@ -11,6 +11,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { openMailto } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar: React.FC = () => {
@@ -76,7 +77,11 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       <div className="mt-auto px-4 space-y-2">
-        <button className="w-full flex items-center gap-4 px-6 py-4 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest">
+        <button
+          type="button"
+          onClick={() => openMailto('support@lasustech.edu.ng', 'LASUSTECH Repository Support')}
+          className="w-full flex items-center gap-4 px-6 py-4 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest"
+        >
           <HelpCircle className="w-5 h-5" />
           <span>Support</span>
         </button>
