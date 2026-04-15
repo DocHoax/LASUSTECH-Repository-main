@@ -97,54 +97,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     if (!auth) throw new Error('Firebase is not configured. Please set up your .env.local file.');
     setProfileLoading(true);
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    await fetchUserProfile(result.user.uid);
-    setProfileLoading(false);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await fetchUserProfile(result.user.uid);
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const signup = async (email: string, password: string, profile: Partial<UserProfile>) => {
     if (!auth || !db) throw new Error('Firebase is not configured. Please set up your .env.local file.');
     setProfileLoading(true);
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    const userDoc: Omit<UserProfile, 'uid'> = {
-      displayName: profile.displayName || '',
-      email: result.user.email || email,
-      matricNumber: profile.matricNumber || '',
-      role: profile.role || 'student',
-      department: profile.department || '',
-      faculty: profile.faculty || '',
-      avatarUrl: profile.avatarUrl || '',
-      createdAt: serverTimestamp(),
-    };
-    await setDoc(doc(db, 'users', result.user.uid), userDoc);
-    setUserProfile({ uid: result.user.uid, ...userDoc });
-    setProfileLoading(false);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const userDoc: Omit<UserProfile, 'uid'> = {
+        displayName: profile.displayName || '',
+        email: result.user.email || email,
+        matricNumber: profile.matricNumber || '',
+        role: profile.role || 'student',
+        department: profile.department || '',
+        faculty: profile.faculty || '',
+        avatarUrl: profile.avatarUrl || '',
+        createdAt: serverTimestamp(),
+      };
+      await setDoc(doc(db, 'users', result.user.uid), userDoc);
+      setUserProfile({ uid: result.user.uid, ...userDoc });
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const loginWithGoogle = async () => {
     if (!auth || !db) throw new Error('Firebase is not configured. Please set up your .env.local file.');
     setProfileLoading(true);
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const docRef = doc(db, 'users', result.user.uid);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) {
-      const userDoc: Omit<UserProfile, 'uid'> = {
-        displayName: result.user.displayName || '',
-        email: result.user.email || '',
-        matricNumber: '',
-        role: 'student',
-        department: '',
-        faculty: '',
-        avatarUrl: result.user.photoURL || '',
-        createdAt: serverTimestamp(),
-      };
-      await setDoc(docRef, userDoc);
-      setUserProfile({ uid: result.user.uid, ...userDoc });
-    } else {
-      setUserProfile({ uid: result.user.uid, ...docSnap.data() } as UserProfile);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const docRef = doc(db, 'users', result.user.uid);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        const userDoc: Omit<UserProfile, 'uid'> = {
+          displayName: result.user.displayName || '',
+          email: result.user.email || '',
+          matricNumber: '',
+          role: 'student',
+          department: '',
+          faculty: '',
+          avatarUrl: result.user.photoURL || '',
+          createdAt: serverTimestamp(),
+        };
+        await setDoc(docRef, userDoc);
+        setUserProfile({ uid: result.user.uid, ...userDoc });
+      } else {
+        setUserProfile({ uid: result.user.uid, ...docSnap.data() } as UserProfile);
+      }
+    } finally {
+      setProfileLoading(false);
     }
-    setProfileLoading(false);
   };
 
   const updateUserProfile = async (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => {
