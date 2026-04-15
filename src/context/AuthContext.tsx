@@ -27,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  profileLoading: boolean;
   isConfigured: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
@@ -49,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);
+  const [profileLoading, setProfileLoading] = useState(isFirebaseConfigured);
 
   // Fetch user profile from Firestore
   const fetchUserProfile = async (uid: string) => {
@@ -71,28 +73,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!auth) {
       setLoading(false);
+      setProfileLoading(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+      setLoading(false);
       if (firebaseUser) {
-        await fetchUserProfile(firebaseUser.uid);
+        setProfileLoading(true);
+        try {
+          await fetchUserProfile(firebaseUser.uid);
+        } finally {
+          setProfileLoading(false);
+        }
       } else {
         setUserProfile(null);
+        setProfileLoading(false);
       }
-      setLoading(false);
     });
     return unsubscribe;
   }, []);
 
   const login = async (email: string, password: string) => {
     if (!auth) throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    setProfileLoading(true);
     const result = await signInWithEmailAndPassword(auth, email, password);
     await fetchUserProfile(result.user.uid);
+    setProfileLoading(false);
   };
 
   const signup = async (email: string, password: string, profile: Partial<UserProfile>) => {
     if (!auth || !db) throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    setProfileLoading(true);
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const userDoc: Omit<UserProfile, 'uid'> = {
       displayName: profile.displayName || '',
@@ -106,10 +118,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     await setDoc(doc(db, 'users', result.user.uid), userDoc);
     setUserProfile({ uid: result.user.uid, ...userDoc });
+    setProfileLoading(false);
   };
 
   const loginWithGoogle = async () => {
     if (!auth || !db) throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    setProfileLoading(true);
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const docRef = doc(db, 'users', result.user.uid);
@@ -130,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       setUserProfile({ uid: result.user.uid, ...docSnap.data() } as UserProfile);
     }
+    setProfileLoading(false);
   };
 
   const updateUserProfile = async (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => {
@@ -151,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, updateUserProfile, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, profileLoading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, updateUserProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

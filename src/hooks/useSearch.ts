@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { Paper } from '../types';
 import { RECENT_PAPERS } from '../constants';
+import { fetchPublishedPapers } from './useFirestore';
+import { isFirebaseConfigured } from '../lib/firebase';
 
 export function useSearch(searchQuery: string) {
   const [results, setResults] = useState<Paper[]>([]);
@@ -21,21 +21,7 @@ export function useSearch(searchQuery: string) {
       setError(null);
 
       try {
-        let allPapers: Paper[];
-
-        if (db) {
-          // Firestore search
-          const q = query(
-            collection(db, 'papers'),
-            where('status', '==', 'published'),
-            orderBy('createdAt', 'desc')
-          );
-          const snapshot = await getDocs(q);
-          allPapers = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Paper));
-        } else {
-          // Fallback: search static constants when Firebase isn't configured
-          allPapers = RECENT_PAPERS;
-        }
+        const allPapers = isFirebaseConfigured ? await fetchPublishedPapers() : RECENT_PAPERS;
 
         const normalizedQuery = searchQuery.toLowerCase().trim();
         const filtered = allPapers.filter((paper) => {

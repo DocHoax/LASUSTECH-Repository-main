@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { user, userProfile, loading, isConfigured } = useAuth();
+  const { user, userProfile, loading, profileLoading, isConfigured } = useAuth();
   const location = useLocation();
 
   // If Firebase isn't configured, allow access in demo mode
@@ -17,7 +17,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <>{children}</>;
   }
 
-  if (loading) {
+  if (loading || (requiredRole && user && profileLoading)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

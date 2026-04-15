@@ -15,6 +15,44 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return;
+            }
+
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+
+            if (id.includes('motion')) {
+              return 'motion';
+            }
+
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+
+            if (
+              id.includes('react-dom') ||
+              id.includes('/react/') ||
+              id.includes('scheduler') ||
+              id.includes('use-sync-external-store') ||
+              id.includes('react-is') ||
+              id.includes('loose-envify') ||
+              id.includes('js-tokens') ||
+              id.includes('object-assign')
+            ) {
+              return 'react';
+            }
+
+            return 'vendor';
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

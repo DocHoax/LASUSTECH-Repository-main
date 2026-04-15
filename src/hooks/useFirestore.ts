@@ -4,15 +4,98 @@ import {
   query,
   orderBy,
   limit,
-  onSnapshot,
   doc,
   where,
   QueryConstraint,
   updateDoc,
   increment,
+  getDocs,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Faculty, Paper } from '../types';
+import { RECENT_PAPERS } from '../constants';
+
+type CachedValue<T> = {
+  expiresAt: number;
+  data: T;
+};
+
+const firestoreCache = new Map<string, CachedValue<unknown>>();
+const pendingReads = new Map<string, Promise<unknown>>();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getCachedRead<T>(key: string, fetcher: () => Promise<T>, ttlMs = CACHE_TTL_MS): Promise<T> {
+  const now = Date.now();
+  const cached = firestoreCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.data as T;
+  }
+
+  const pending = pendingReads.get(key);
+  if (pending) {
+    return pending as Promise<T>;
+  }
+
+  const request = fetcher()
+    .then((data) => {
+      firestoreCache.set(key, { expiresAt: Date.now() + ttlMs, data });
+      pendingReads.delete(key);
+      return data;
+    })
+    .catch((error) => {
+      pendingReads.delete(key);
+      throw error;
+    });
+
+  pendingReads.set(key, request as Promise<unknown>);
+  return request;
+}
+
+function clearFirestoreCache() {
+  firestoreCache.clear();
+  pendingReads.clear();
+}
+
+async function fetchFaculties() {
+  if (!db) return [] as Faculty[];
+
+  return getCachedRead('faculties', async () => {
+    const q = query(collection(db, 'faculties'), orderBy('name'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Faculty));
+  });
+}
+
+async function fetchPapersByKey(key: string, q: ReturnType<typeof query>) {
+  if (!db) return [] as Paper[];
+
+  return getCachedRead(key, async () => {
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Paper));
+  });
+}
+
+export async function fetchPublishedPapers() {
+  if (!db) return RECENT_PAPERS as Paper[];
+
+  const q = query(
+    collection(db, 'papers'),
+    where('status', '==', 'published'),
+    orderBy('createdAt', 'desc')
+  );
+
+  return fetchPapersByKey('papers:published', q);
+}
+
+async function fetchPaperById(id: string) {
+  if (!db) return null;
+
+  return getCachedRead(`paper:${id}`, async () => {
+    const snapshot = await getDoc(doc(db, 'papers', id));
+    return snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as Paper) : null;
+  });
+}
 
 // ── Faculties ────────────────────────────────────────────────
 
@@ -22,25 +105,31 @@ export function useFaculties() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     if (!db) {
       setLoading(false);
       return;
     }
-    const q = query(collection(db, 'faculties'), orderBy('name'));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Faculty));
+    setLoading(true);
+
+    fetchFaculties()
+      .then((data) => {
+        if (!active) return;
         setFaculties(data);
-        setLoading(false);
-      },
-      (err) => {
+      })
+      .catch((err) => {
+        if (!active) return;
         console.error('Error fetching faculties:', err);
         setError(err.message);
-        setLoading(false);
-      }
-    );
-    return unsubscribe;
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   return { faculties, loading, error };
@@ -60,12 +149,17 @@ export function usePapers(filters?: PaperFilters) {
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const filtersKey = JSON.stringify(filters || {});
 
   useEffect(() => {
+    let active = true;
+
     if (!db) {
       setLoading(false);
       return;
     }
+
+    setLoading(true);
     const constraints: QueryConstraint[] = [];
 
     if (filters?.facultyId) constraints.push(where('facultyId', '==', filters.facultyId));
@@ -77,21 +171,24 @@ export function usePapers(filters?: PaperFilters) {
     constraints.push(orderBy('createdAt', 'desc'));
 
     const q = query(collection(db, 'papers'), ...constraints);
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Paper));
+    fetchPapersByKey(`papers:${filtersKey}`, q)
+      .then((data) => {
+        if (!active) return;
         setPapers(data);
-        setLoading(false);
-      },
-      (err) => {
+      })
+      .catch((err) => {
+        if (!active) return;
         console.error('Error fetching papers:', err);
         setError(err.message);
-        setLoading(false);
-      }
-    );
-    return unsubscribe;
-  }, [filters?.facultyId, filters?.level, filters?.semester, filters?.type, filters?.status]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [filtersKey]);
 
   return { papers, loading, error };
 }
@@ -102,30 +199,37 @@ export function useRecentPapers(count: number = 6) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     if (!db) {
       setLoading(false);
       return;
     }
+
+    setLoading(true);
     const q = query(
       collection(db, 'papers'),
       where('status', '==', 'published'),
       orderBy('createdAt', 'desc'),
       limit(count)
     );
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Paper));
+    fetchPapersByKey(`recent:${count}`, q)
+      .then((data) => {
+        if (!active) return;
         setPapers(data);
-        setLoading(false);
-      },
-      (err) => {
+      })
+      .catch((err) => {
+        if (!active) return;
         console.error('Error fetching recent papers:', err);
         setError(err.message);
-        setLoading(false);
-      }
-    );
-    return unsubscribe;
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [count]);
 
   return { papers, loading, error };
@@ -137,27 +241,31 @@ export function usePaper(id: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     if (!id || !db) {
       setLoading(false);
       return;
     }
-    const unsubscribe = onSnapshot(
-      doc(db, 'papers', id),
-      (snapshot) => {
-        if (snapshot.exists()) {
-          setPaper({ id: snapshot.id, ...snapshot.data() } as Paper);
-        } else {
-          setPaper(null);
-        }
-        setLoading(false);
-      },
-      (err) => {
+    setLoading(true);
+
+    fetchPaperById(id)
+      .then((data) => {
+        if (!active) return;
+        setPaper(data);
+      })
+      .catch((err) => {
+        if (!active) return;
         console.error('Error fetching paper:', err);
         setError(err.message);
-        setLoading(false);
-      }
-    );
-    return unsubscribe;
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   return { paper, loading, error };
@@ -170,6 +278,7 @@ export async function incrementDownload(paperId: string) {
   try {
     const paperRef = doc(db, 'papers', paperId);
     await updateDoc(paperRef, { downloads: increment(1) });
+    clearFirestoreCache();
   } catch (err) {
     console.error('Error incrementing download:', err);
   }
