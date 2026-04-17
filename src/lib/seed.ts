@@ -72,6 +72,25 @@ const FACULTIES = [
 
 const PAPERS = [
   {
+    id: 'cit-851-advanced-systems-analysis-design',
+    title: 'Advanced Systems Analysis and Design',
+    courseCode: 'CIT 851',
+    level: '800 Level',
+    year: 'Undated',
+    semester: '2nd Semester',
+    downloads: 0,
+    pages: 6,
+    date: 'Recently added',
+    type: 'Past Question',
+    status: 'published',
+    facultyId: 'science',
+    departmentId: 'computer-science',
+    fileUrl: '/papers/Advance%20System%20and%20Designs.docx',
+    uploadedBy: 'system',
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  },
+  {
     id: 'csc-202-2023',
     title: 'Data Structures & Algorithms',
     courseCode: 'CSC 202',
