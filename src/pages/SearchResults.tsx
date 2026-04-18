@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, ArrowRight, FileText, Zap, Loader2, SearchX } from 'lucide-react';
+import { Search, ArrowRight, FileText, Zap, Loader2, SearchX, X } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch';
 import { motion } from 'motion/react';
 
@@ -8,13 +8,50 @@ export const SearchResults: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
+  const levelParam = searchParams.get('level') || '';
+  const typeParam = searchParams.get('type') || '';
+  const yearParam = searchParams.get('year') || '';
   const [localQuery, setLocalQuery] = React.useState(queryParam);
-  const { results, loading, error } = useSearch(queryParam);
+  const { results, loading, error } = useSearch(queryParam, {
+    level: levelParam,
+    type: typeParam,
+    year: yearParam,
+  });
+
+  React.useEffect(() => {
+    setLocalQuery(queryParam);
+  }, [queryParam]);
+
+  const levelOptions = ['', '100 Level', '200 Level', '300 Level', '400 Level', '800 Level'];
+  const typeOptions = ['', 'Past Question', 'Lecture Note', 'Research Paper'];
+  const yearOptions = ['', '2023/2024', '2022/2023', '2021/2022', '2020/2021', 'Undated'];
+
+  const updateParams = (updates: Record<string, string>) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        next.set(key, value);
+      } else {
+        next.delete(key);
+      }
+    });
+    setSearchParams(next);
+  };
+
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('level');
+    next.delete('type');
+    next.delete('year');
+    setSearchParams(next);
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (localQuery.trim()) {
-      setSearchParams({ q: localQuery.trim() });
+      const next = new URLSearchParams(searchParams);
+      next.set('q', localQuery.trim());
+      setSearchParams(next);
     }
   };
 
@@ -57,6 +94,52 @@ export const SearchResults: React.FC = () => {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl">
+          <select
+            value={levelParam}
+            onChange={(e) => updateParams({ level: e.target.value })}
+            className="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-primary shadow-sm"
+          >
+            {levelOptions.map((option) => (
+              <option key={option || 'any-level'} value={option}>
+                {option || 'All Levels'}
+              </option>
+            ))}
+          </select>
+          <select
+            value={typeParam}
+            onChange={(e) => updateParams({ type: e.target.value })}
+            className="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-primary shadow-sm"
+          >
+            {typeOptions.map((option) => (
+              <option key={option || 'any-type'} value={option}>
+                {option || 'All Types'}
+              </option>
+            ))}
+          </select>
+          <select
+            value={yearParam}
+            onChange={(e) => updateParams({ year: e.target.value })}
+            className="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium text-primary shadow-sm"
+          >
+            {yearOptions.map((option) => (
+              <option key={option || 'any-year'} value={option}>
+                {option || 'All Years'}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(levelParam || typeParam || yearParam) && (
+          <div className="flex flex-wrap items-center gap-3 mt-4">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Active filters</span>
+            {levelParam && <button type="button" onClick={() => updateParams({ level: '' })} className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-50 text-slate-500 text-xs font-bold">{levelParam} <X className="w-3 h-3" /></button>}
+            {typeParam && <button type="button" onClick={() => updateParams({ type: '' })} className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-50 text-slate-500 text-xs font-bold">{typeParam} <X className="w-3 h-3" /></button>}
+            {yearParam && <button type="button" onClick={() => updateParams({ year: '' })} className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-50 text-slate-500 text-xs font-bold">{yearParam} <X className="w-3 h-3" /></button>}
+            <button type="button" onClick={clearFilters} className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-primary text-white text-xs font-black uppercase tracking-widest">Clear Filters</button>
+          </div>
+        )}
       </header>
 
       {/* Results */}
@@ -69,7 +152,7 @@ export const SearchResults: React.FC = () => {
         <div className="text-center py-20">
           <p className="text-red-500 font-medium">{error}</p>
         </div>
-      ) : results.length === 0 && queryParam ? (
+      ) : results.length === 0 && (queryParam || levelParam || typeParam || yearParam) ? (
           <div className="flex flex-col items-center justify-center py-16 sm:py-20 gap-6">
           <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center shadow-inner">
             <SearchX className="w-12 h-12 text-slate-300" />
@@ -77,7 +160,7 @@ export const SearchResults: React.FC = () => {
           <div className="text-center space-y-2">
             <h3 className="text-2xl font-headline font-bold text-primary">No Results Found</h3>
             <p className="text-slate-500 max-w-md">
-              We couldn't find any papers matching "<span className="font-semibold">{queryParam}</span>". Try a different course code or keyword.
+              We couldn't find any papers matching "<span className="font-semibold">{queryParam || 'your filters'}</span>". Try a different course code or keyword.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-3 mt-4 px-4">

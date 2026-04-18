@@ -40,10 +40,40 @@ export const Detail: React.FC = () => {
     fileUrl: '',
   };
 
+  const rawDocumentUrl = paper?.fileUrl || displayData.fileUrl || '';
+
+  const absoluteDocumentUrl = React.useMemo(() => {
+    if (!rawDocumentUrl) return '';
+
+    try {
+      return new URL(rawDocumentUrl, window.location.origin).toString();
+    } catch {
+      return rawDocumentUrl;
+    }
+  }, [rawDocumentUrl]);
+
+  const documentExtension = React.useMemo(() => {
+    if (!absoluteDocumentUrl) return '';
+
+    const cleanUrl = absoluteDocumentUrl.split('?')[0].split('#')[0];
+    return cleanUrl.slice(cleanUrl.lastIndexOf('.') + 1).toLowerCase();
+  }, [absoluteDocumentUrl]);
+
+  const hasDocument = Boolean(absoluteDocumentUrl);
+  const previewUrl = React.useMemo(() => {
+    if (!hasDocument) return '';
+    if (documentExtension === 'doc' || documentExtension === 'docx') {
+      return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(absoluteDocumentUrl)}`;
+    }
+    return absoluteDocumentUrl;
+  }, [absoluteDocumentUrl, documentExtension, hasDocument]);
+
+  const documentLabel = documentExtension ? documentExtension.toUpperCase() : 'FILE';
+
   const handleDownload = async () => {
-    if (paper?.fileUrl) {
+    if (paper?.fileUrl || displayData.fileUrl) {
       if (paper.id) await incrementDownload(paper.id);
-      window.open(paper.fileUrl, '_blank');
+      window.open(absoluteDocumentUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -53,8 +83,8 @@ export const Detail: React.FC = () => {
   }, [displayData.id]);
 
   const handleExpandPreview = () => {
-    if (displayData.fileUrl) {
-      window.open(displayData.fileUrl, '_blank');
+    if (hasDocument) {
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
       return;
     }
 
@@ -126,11 +156,18 @@ export const Detail: React.FC = () => {
                 <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-40 md:h-40 bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl flex items-center justify-center mb-6 md:mb-10 group-hover:scale-110 transition-transform duration-700">
                   <FileText className="text-primary w-12 h-12 md:w-20 md:h-20 opacity-20" />
                 </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/90 text-primary rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-slate-100 shadow-sm">
+                  {hasDocument ? documentLabel : 'No file attached'}
+                </div>
                 <h3 className="font-headline text-lg sm:text-xl md:text-2xl font-extrabold text-primary mb-2 md:mb-4">Secure PDF Preview</h3>
-                <p className="text-slate-500 text-sm md:text-base max-w-sm mx-auto mb-6 md:mb-10 leading-relaxed font-light">You are viewing a secure, watermarked preview of the {displayData.year} academic session past question paper.</p>
+                <p className="text-slate-500 text-sm md:text-base max-w-sm mx-auto mb-6 md:mb-10 leading-relaxed font-light">
+                  {hasDocument
+                    ? `You can preview the attached ${documentLabel} document in a browser-compatible viewer.`
+                    : `You are viewing a secure, watermarked preview of the ${displayData.year} academic session past question paper.`}
+                </p>
                 <button onClick={handleExpandPreview} className="px-6 sm:px-8 md:px-10 py-3 md:py-4 bg-white text-primary border-2 border-slate-100 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:shadow-2xl hover:border-primary/10 transition-all flex items-center gap-3 active:scale-95">
                   <ZoomIn className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
-                  Expand Preview
+                  {hasDocument ? 'Open Document Preview' : 'Request Preview'}
                 </button>
               </div>
               <div className="absolute bottom-4 sm:bottom-10 right-4 sm:right-10 opacity-5 rotate-[-15deg] pointer-events-none select-none">
@@ -164,8 +201,17 @@ export const Detail: React.FC = () => {
                 className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] hover:-translate-y-1 transition-all mb-6 active:scale-95"
               >
                 <Download className="w-5 h-5" />
-                Download PDF ({displayData.pages} Pages)
+                {hasDocument ? `Download ${documentLabel}` : `Download PDF`} ({displayData.pages} Pages)
               </button>
+              {hasDocument && (
+                <button
+                  onClick={handleExpandPreview}
+                  className="w-full py-4 mb-6 bg-slate-50 text-primary rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white hover:shadow-sm border border-slate-100 transition-all"
+                >
+                  <ZoomIn className="w-5 h-5 text-secondary" />
+                  Open In Viewer
+                </button>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button onClick={handleShare} className="py-4 px-4 bg-slate-50 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
                   <Share2 className="w-4 h-4" /> Share

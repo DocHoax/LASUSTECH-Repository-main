@@ -21,7 +21,7 @@ export interface Paper {
   pages: number;
   date: string;
   type: string;
-  status?: 'published' | 'under-review' | 'draft';
+  status?: 'published' | 'under-review' | 'draft' | 'rejected';
   facultyId?: string;
   departmentId?: string;
   fileUrl?: string;

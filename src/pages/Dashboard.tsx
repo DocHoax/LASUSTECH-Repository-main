@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useRecentPapers } from '../hooks/useFirestore';
+import { usePapers, updatePaperStatus } from '../hooks/useFirestore';
 import { RECENT_PAPERS } from '../constants';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,8 @@ export const Dashboard: React.FC = () => {
   const queueRef = React.useRef<HTMLDivElement | null>(null);
   const storageRef = React.useRef<HTMLDivElement | null>(null);
   const { papers: recentPapers, loading } = useRecentPapers(3);
+  const { papers: pendingPapers, loading: pendingLoading } = usePapers({ status: 'under-review' });
+  const [moderatingPaperId, setModeratingPaperId] = React.useState<string | null>(null);
   const displayPapers = recentPapers.length > 0 ? recentPapers : RECENT_PAPERS;
 
   const stats = [
@@ -41,6 +44,17 @@ export const Dashboard: React.FC = () => {
     link.download = 'lasustech-repository-report.csv';
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleModeration = async (paperId: string, nextStatus: 'published' | 'rejected') => {
+    setModeratingPaperId(paperId);
+    try {
+      await updatePaperStatus(paperId, nextStatus);
+    } catch (error) {
+      console.error('Unable to update paper status:', error);
+    } finally {
+      setModeratingPaperId(null);
+    }
   };
 
   return (
@@ -193,27 +207,60 @@ export const Dashboard: React.FC = () => {
           <div ref={queueRef} className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-headline font-extrabold text-xl text-primary">Verification Queue</h3>
-              <span className="w-6 h-6 bg-red-50 text-red-600 rounded-lg flex items-center justify-center text-[10px] font-black">3</span>
+              <span className="w-6 h-6 bg-red-50 text-red-600 rounded-lg flex items-center justify-center text-[10px] font-black">{pendingPapers.length}</span>
             </div>
             <div className="space-y-5">
-              {[
-                { title: 'MTH 101 Past Question', time: '12m ago', status: 'urgent' },
-                { title: 'BIO 204 Lecture Notes', time: '1h ago', status: 'normal' },
-                { title: 'GST 102 Summary', time: '3h ago', status: 'normal' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-5 p-4 hover:bg-slate-50 rounded-[1.5rem] transition-all cursor-pointer group border border-transparent hover:border-slate-100">
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                    item.status === 'urgent' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
-                  )}>
-                    {item.status === 'urgent' ? <AlertCircle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-primary group-hover:text-secondary transition-colors leading-tight">{item.title}</h4>
-                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1.5">{item.time} • Awaiting Review</p>
-                  </div>
+              {pendingLoading && pendingPapers.length === 0 ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
                 </div>
-              ))}
+              ) : pendingPapers.length === 0 ? (
+                <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 text-center">
+                  <p className="text-sm font-bold text-primary">No papers awaiting review.</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Uploads approved or rejected will disappear from this queue.</p>
+                </div>
+              ) : (
+                pendingPapers.map((paper) => (
+                  <div key={paper.id} className="p-4 rounded-[1.5rem] border border-slate-100 hover:border-primary/10 hover:shadow-lg transition-all space-y-4">
+                    <div className="flex items-start gap-5">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner bg-yellow-50 text-yellow-600">
+                        <Clock className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-primary leading-tight">{paper.title}</h4>
+                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1.5">
+                          {paper.courseCode} • {paper.level} • {paper.semester}
+                        </p>
+                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1.5">
+                          Uploaded by {paper.uploaderName || paper.uploadedBy || 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => navigate(`/paper/${paper.id}`)}
+                        className="flex-1 px-4 py-3 rounded-xl border border-slate-100 text-xs font-black uppercase tracking-widest text-primary hover:border-primary/10 hover:bg-slate-50 transition-all"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleModeration(paper.id, 'published')}
+                        disabled={moderatingPaperId === paper.id}
+                        className="flex-1 px-4 py-3 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:shadow-lg transition-all disabled:opacity-60"
+                      >
+                        {moderatingPaperId === paper.id ? 'Updating...' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => handleModeration(paper.id, 'rejected')}
+                        disabled={moderatingPaperId === paper.id}
+                        className="flex-1 px-4 py-3 rounded-xl bg-slate-50 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <button onClick={() => queueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="w-full mt-8 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-sm">
               Open Full Queue

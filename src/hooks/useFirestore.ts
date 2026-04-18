@@ -9,12 +9,15 @@ import {
   QueryConstraint,
   updateDoc,
   increment,
+  serverTimestamp,
   getDocs,
   getDoc,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Faculty, Paper } from '../types';
 import { RECENT_PAPERS } from '../constants';
+
+export type PaperStatus = NonNullable<Paper['status']>;
 
 type CachedValue<T> = {
   expiresAt: number;
@@ -281,5 +284,21 @@ export async function incrementDownload(paperId: string) {
     clearFirestoreCache();
   } catch (err) {
     console.error('Error incrementing download:', err);
+  }
+}
+
+export async function updatePaperStatus(paperId: string, status: PaperStatus) {
+  if (!db) return;
+
+  try {
+    const paperRef = doc(db, 'papers', paperId);
+    await updateDoc(paperRef, {
+      status,
+      updatedAt: serverTimestamp(),
+    });
+    clearFirestoreCache();
+  } catch (err) {
+    console.error('Error updating paper status:', err);
+    throw err;
   }
 }
