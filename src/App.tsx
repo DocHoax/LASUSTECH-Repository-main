@@ -12,6 +12,7 @@ const Detail = lazy(() => import('./pages/Detail').then((module) => ({ default: 
 const Settings = lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })));
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
 const SearchResults = lazy(() => import('./pages/SearchResults').then((module) => ({ default: module.SearchResults })));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail').then((module) => ({ default: module.VerifyEmail })));
 
 const RouteFallback: React.FC = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
@@ -29,6 +30,7 @@ const App: React.FC = () => {
         <Routes>
           {/* Login page — standalone, no sidebar/navbar */}
           <Route path="/login" element={<Login />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* All other pages use the shared Layout */}
           <Route element={<Layout />}>

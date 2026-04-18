@@ -9,17 +9,20 @@ import {
   HelpCircle,
   Camera,
   ChevronRight,
-  Loader2
+  Loader2,
+  BadgeCheck,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { auth } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
-  const { updateUserProfile } = useAuth();
+  const { user, userProfile, sendVerificationEmail, refreshCurrentUser, updateUserProfile } = useAuth();
   const [activeTab, setActiveTab] = React.useState('profile');
   const [saving, setSaving] = React.useState(false);
+  const [verificationSending, setVerificationSending] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [profileName, setProfileName] = React.useState('');
   const [profileEmail, setProfileEmail] = React.useState('');
@@ -85,12 +88,69 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    setVerificationSending(true);
+    setStatusMessage(null);
+    try {
+      await sendVerificationEmail();
+      setStatusMessage('Verification email sent. Check your inbox.');
+    } catch (error: any) {
+      setStatusMessage(error?.message || 'Unable to send verification email.');
+    } finally {
+      setVerificationSending(false);
+    }
+  };
+
+  const handleRefreshVerification = async () => {
+    setSaving(true);
+    setStatusMessage(null);
+    try {
+      await refreshCurrentUser();
+      setStatusMessage(auth.currentUser?.emailVerified ? 'Email verified successfully.' : 'Verification not complete yet.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-10 sm:space-y-12">
       <header>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline font-extrabold text-primary tracking-tight mb-4 leading-tight">Account <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">Settings</span></h1>
         <p className="text-slate-500 text-base sm:text-lg lg:text-xl font-light leading-relaxed">Manage your institutional profile and repository preferences.</p>
       </header>
+
+      <div className={cn(
+        "rounded-[2rem] p-5 sm:p-6 border shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4",
+        user?.emailVerified ? "bg-green-50 border-green-100" : "bg-amber-50 border-amber-100"
+      )}>
+        <div className="flex items-start gap-4">
+          <div className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+            user?.emailVerified ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+          )}>
+            <BadgeCheck className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-black uppercase tracking-widest text-primary">Email Verification</p>
+            <p className="text-sm text-slate-600 mt-1">
+              {user?.emailVerified
+                ? 'Your email has been verified and your account is fully active.'
+                : 'Your account still needs email verification before full access is granted.'}
+            </p>
+          </div>
+        </div>
+        {!user?.emailVerified && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button type="button" onClick={handleResendVerification} disabled={verificationSending} className="px-5 py-3 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest disabled:opacity-60 flex items-center justify-center gap-2">
+              {verificationSending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Resend Verification
+            </button>
+            <button type="button" onClick={handleRefreshVerification} disabled={saving} className="px-5 py-3 rounded-2xl bg-white text-primary border border-slate-100 text-xs font-black uppercase tracking-widest disabled:opacity-60">
+              I&apos;ve Verified
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
         <aside className="lg:col-span-4 space-y-3">

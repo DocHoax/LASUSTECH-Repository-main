@@ -18,7 +18,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, signup, loginWithGoogle, user } = useAuth();
+  const { login, signup, loginWithGoogle, sendVerificationEmail, refreshCurrentUser, user } = useAuth();
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [loginType, setLoginType] = React.useState<'student' | 'staff' | 'admin'>('student');
@@ -61,9 +61,21 @@ export const Login: React.FC = () => {
 
   // If already logged in, redirect
   React.useEffect(() => {
-    if (user) {
+    if (user?.emailVerified) {
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
+      return;
+    }
+
+    if (user && !user.emailVerified) {
+      navigate('/verify-email', {
+        replace: true,
+        state: {
+          email: user.email,
+          role: user.email?.toLowerCase().includes('staff') ? 'staff' : 'student',
+          from: (location.state as any)?.from,
+        },
+      });
     }
   }, [user, navigate, location]);
 
@@ -79,8 +91,34 @@ export const Login: React.FC = () => {
           matricNumber,
           role: accountRole,
         });
+        try {
+          await sendVerificationEmail();
+        } catch (verifyError) {
+          console.warn('Unable to send verification email:', verifyError);
+        }
+        navigate('/verify-email', {
+          replace: true,
+          state: {
+            email,
+            role: accountRole,
+            from: (location.state as any)?.from,
+          },
+        });
+        return;
       } else {
         await login(email, password);
+        await refreshCurrentUser();
+        if (auth?.currentUser && !auth.currentUser.emailVerified) {
+          navigate('/verify-email', {
+            replace: true,
+            state: {
+              email: auth.currentUser.email || email,
+              role: loginType,
+              from: (location.state as any)?.from,
+            },
+          });
+          return;
+        }
       }
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });

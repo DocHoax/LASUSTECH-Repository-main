@@ -17,6 +17,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <>{children}</>;
   }
 
+  if (user && !user.emailVerified) {
+    return <Navigate to="/verify-email" state={{ from: location }} replace />;
+  }
+
   if (loading || (requiredRole && user && profileLoading)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">

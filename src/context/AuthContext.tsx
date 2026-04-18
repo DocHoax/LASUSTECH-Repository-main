@@ -7,6 +7,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  sendEmailVerification,
+  reload,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '../lib/firebase';
@@ -20,6 +22,7 @@ export interface UserProfile {
   department: string;
   faculty: string;
   avatarUrl: string;
+  emailVerified?: boolean;
   createdAt: any;
 }
 
@@ -32,6 +35,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
+  refreshCurrentUser: () => Promise<void>;
   updateUserProfile: (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -99,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfileLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      await reload(result.user);
       await fetchUserProfile(result.user.uid);
     } finally {
       setProfileLoading(false);
@@ -118,9 +124,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         department: profile.department || '',
         faculty: profile.faculty || '',
         avatarUrl: profile.avatarUrl || '',
+        emailVerified: result.user.emailVerified,
         createdAt: serverTimestamp(),
       };
       await setDoc(doc(db, 'users', result.user.uid), userDoc);
+      await sendEmailVerification(result.user);
       setUserProfile({ uid: result.user.uid, ...userDoc });
     } finally {
       setProfileLoading(false);
@@ -144,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           department: '',
           faculty: '',
           avatarUrl: result.user.photoURL || '',
+          emailVerified: true,
           createdAt: serverTimestamp(),
         };
         await setDoc(docRef, userDoc);
@@ -154,6 +163,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setProfileLoading(false);
     }
+  };
+
+  const sendVerificationEmail = async () => {
+    if (!auth?.currentUser) {
+      throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    }
+
+    await sendEmailVerification(auth.currentUser);
+  };
+
+  const refreshCurrentUser = async () => {
+    if (!auth?.currentUser) {
+      return;
+    }
+
+    await reload(auth.currentUser);
+    await fetchUserProfile(auth.currentUser.uid);
   };
 
   const updateUserProfile = async (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => {
@@ -175,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, profileLoading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, updateUserProfile, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, profileLoading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, sendVerificationEmail, refreshCurrentUser, updateUserProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );
