@@ -386,7 +386,7 @@ export const Upload: React.FC = () => {
             <button 
               onClick={handleSubmit}
               disabled={submitting || uploading}
-              className="w-full sm:w-auto px-10 sm:px-12 py-5 bg-primary text-white font-bold rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto px-10 sm:px-12 py-5 bg-primary text-white font-bold rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-pointer"
             >
               {submitting || uploading ? (
                 <>

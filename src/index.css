@@ -23,6 +23,15 @@
     overflow-x: hidden;
   }
 
+  a,
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: pointer;
+  }
+
   body {
     @apply bg-surface text-primary font-sans antialiased;
     overflow-x: hidden;

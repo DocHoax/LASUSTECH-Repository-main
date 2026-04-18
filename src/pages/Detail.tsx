@@ -71,8 +71,31 @@ export const Detail: React.FC = () => {
   const documentLabel = documentExtension ? documentExtension.toUpperCase() : 'FILE';
 
   const handleDownload = async () => {
-    if (paper?.fileUrl || displayData.fileUrl) {
-      if (paper.id) await incrementDownload(paper.id);
+    if (!absoluteDocumentUrl) {
+      return;
+    }
+
+    if (paper?.id) {
+      await incrementDownload(paper.id);
+    }
+
+    try {
+      const response = await fetch(absoluteDocumentUrl);
+      if (!response.ok) {
+        throw new Error('Unable to fetch document');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `${displayData.courseCode.replace(/\s+/g, '-')}-${displayData.year.replace(/\s+/g, '-')}.${documentExtension || 'pdf'}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error('Download failed, falling back to direct open:', error);
       window.open(absoluteDocumentUrl, '_blank', 'noopener,noreferrer');
     }
   };
