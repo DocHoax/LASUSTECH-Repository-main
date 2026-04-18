@@ -116,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfileLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(result.user);
       const userDoc: Omit<UserProfile, 'uid'> = {
         displayName: profile.displayName || '',
         email: result.user.email || email,
@@ -128,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: serverTimestamp(),
       };
       await setDoc(doc(db, 'users', result.user.uid), userDoc);
-      await sendEmailVerification(result.user);
       setUserProfile({ uid: result.user.uid, ...userDoc });
     } finally {
       setProfileLoading(false);

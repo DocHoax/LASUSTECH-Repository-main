@@ -91,11 +91,6 @@ export const Login: React.FC = () => {
           matricNumber,
           role: accountRole,
         });
-        try {
-          await sendVerificationEmail();
-        } catch (verifyError) {
-          console.warn('Unable to send verification email:', verifyError);
-        }
         navigate('/verify-email', {
           replace: true,
           state: {
