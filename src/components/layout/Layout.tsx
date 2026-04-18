@@ -72,8 +72,8 @@ const FooterLinks: React.FC = () => {
     <ul className="space-y-4 text-sm text-blue-100">
       <li><button onClick={() => navigate('/')} className="hover:text-white transition-colors">Home</button></li>
       <li><button onClick={() => navigate('/directory')} className="hover:text-white transition-colors">Faculty Directory</button></li>
+      <li><button onClick={() => navigate('/search')} className="hover:text-white transition-colors">Search Archive</button></li>
       <li><button onClick={() => navigate('/upload')} className="hover:text-white transition-colors">Contribute</button></li>
-      <li><button type="button" onClick={() => openMailto('support@lasustech.edu.ng', 'Academic Calendar Request')} className="hover:text-white transition-colors">Academic Calendar</button></li>
     </ul>
   );
 };

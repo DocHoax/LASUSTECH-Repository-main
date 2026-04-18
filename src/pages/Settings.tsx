@@ -36,9 +36,9 @@ export const Settings: React.FC = () => {
     { id: 'billing', label: 'Subscriptions', icon: CreditCard },
   ];
 
-  const displayName = userProfile?.displayName || user?.displayName || 'User';
+  const displayName = userProfile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Account';
   const displayEmail = userProfile?.email || user?.email || '';
-  const displayMatric = userProfile?.matricNumber || '';
+  const displayMatric = userProfile?.matricNumber || 'Not provided';
   const displayDepartment = userProfile?.department || 'Computer Science';
   const displayRole = userProfile?.role || 'student';
 
@@ -106,7 +106,7 @@ export const Settings: React.FC = () => {
     setStatusMessage(null);
     try {
       await refreshCurrentUser();
-      setStatusMessage(auth.currentUser?.emailVerified ? 'Email verified successfully.' : 'Verification not complete yet.');
+      setStatusMessage(auth?.currentUser?.emailVerified ? 'Email verified successfully.' : 'Verification not complete yet.');
     } finally {
       setSaving(false);
     }
@@ -237,7 +237,7 @@ export const Settings: React.FC = () => {
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Matric Number</label>
                   <div className="relative">
-                    <input type="text" defaultValue={displayMatric || '210591000'} disabled className="w-full p-4 bg-slate-100 border-none rounded-2xl text-slate-400 font-bold cursor-not-allowed" />
+                    <input type="text" value={displayMatric} readOnly className="w-full p-4 bg-slate-100 border-none rounded-2xl text-slate-500 font-bold cursor-not-allowed" />
                     <Shield className="absolute right-4 top-4 w-5 h-5 text-slate-300" />
                   </div>
                 </div>

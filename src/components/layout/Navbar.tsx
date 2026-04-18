@@ -11,6 +11,8 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, userProfile, logout } = useAuth();
+  const displayName = userProfile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Account';
+  const displayMatric = userProfile?.matricNumber;
 
   const navLinks = [
     { path: '/', label: 'REPOSITORY' },
@@ -102,16 +104,17 @@ export const Navbar: React.FC = () => {
                   <img src={userProfile.avatarUrl} alt="User" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-primary flex items-center justify-center text-white font-bold text-sm">
-                    {(userProfile?.displayName || user.email || '?')[0].toUpperCase()}
+                    {displayName[0]?.toUpperCase() || '?'}
                   </div>
                 )}
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-xs font-black text-primary uppercase tracking-widest leading-none">
-                  {userProfile?.displayName || user.email?.split('@')[0] || 'User'}
+                  {displayName}
                 </p>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">
-                  {userProfile?.role === 'admin' ? 'Admin' : userProfile?.role === 'staff' ? 'Staff' : 'Student'}
+                <p className="text-[10px] text-slate-400 font-bold mt-1 flex items-center gap-2">
+                  <span>{userProfile?.role === 'admin' ? 'Admin' : userProfile?.role === 'staff' ? 'Staff' : 'Student'}</span>
+                  {displayMatric && <span className="text-slate-300">• {displayMatric}</span>}
                 </p>
               </div>
             </button>

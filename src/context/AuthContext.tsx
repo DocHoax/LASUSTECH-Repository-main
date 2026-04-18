@@ -9,6 +9,7 @@ import {
   signInWithPopup,
   sendEmailVerification,
   reload,
+  updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '../lib/firebase';
@@ -116,9 +117,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfileLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      const displayName = profile.displayName?.trim() || result.user.email?.split('@')[0] || 'User';
+      await updateProfile(result.user, { displayName });
       await sendEmailVerification(result.user);
       const userDoc: Omit<UserProfile, 'uid'> = {
-        displayName: profile.displayName || '',
+        displayName,
         email: result.user.email || email,
         matricNumber: profile.matricNumber || '',
         role: profile.role || 'student',
