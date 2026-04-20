@@ -2,3 +2,9 @@ node_modules
 dist
 .env.local
 .env
+build-status.txt
+build-validation.err.log
+build-validation.out.log
+build.log
+firebase-deploy-status.txt
+firebase-deploy.log
