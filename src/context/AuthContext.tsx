@@ -65,12 +65,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const docRef = doc(db, 'users', uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        setUserProfile({ uid, ...docSnap.data() } as UserProfile);
+        const data = docSnap.data();
+        console.log('✅ Profile fetched from Firestore:', { uid, displayName: data.displayName, matricNumber: data.matricNumber });
+        setUserProfile({ uid, ...data } as UserProfile);
       } else {
+        console.warn('⚠️ No profile document found in Firestore for:', uid);
         setUserProfile(null);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ Error fetching user profile:', error);
       setUserProfile(null);
     }
   };
@@ -117,9 +120,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfileLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('📝 User created:', result.user.uid);
+      
       const displayName = profile.displayName?.trim() || result.user.email?.split('@')[0] || 'User';
       await updateProfile(result.user, { displayName });
+      console.log('📝 Firebase Auth displayName updated:', displayName);
+      
       await sendEmailVerification(result.user);
+      console.log('📧 Verification email sent');
+      
       const userDoc: Omit<UserProfile, 'uid'> = {
         displayName,
         email: result.user.email || email,
@@ -131,7 +140,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailVerified: result.user.emailVerified,
         createdAt: serverTimestamp(),
       };
+      console.log('📋 Firestore doc data:', { ...userDoc, createdAt: '[serverTimestamp]' });
+      
       await setDoc(doc(db, 'users', result.user.uid), userDoc);
+      console.log('✅ Firestore document created for user:', result.user.uid);
+      
       setUserProfile({ uid: result.user.uid, ...userDoc });
     } finally {
       setProfileLoading(false);
@@ -192,7 +205,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const uid = auth.currentUser.uid;
     const docRef = doc(db, 'users', uid);
+    console.log('🔄 Updating Firestore profile:', { uid, updates });
+    
     await setDoc(docRef, updates, { merge: true });
+    console.log('✅ Firestore profile updated');
+    
     setUserProfile((current) => (current ? ({ ...current, ...updates } as UserProfile) : null));
     await fetchUserProfile(uid);
   };

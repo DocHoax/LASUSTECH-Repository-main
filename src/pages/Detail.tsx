@@ -72,14 +72,15 @@ export const Detail: React.FC = () => {
 
   const handleDownload = async () => {
     if (!absoluteDocumentUrl) {
+      alert('Document not available for download. The file may still be processing.');
       return;
     }
 
-    if (paper?.id) {
-      await incrementDownload(paper.id);
-    }
-
     try {
+      if (paper?.id) {
+        await incrementDownload(paper.id);
+      }
+
       const response = await fetch(absoluteDocumentUrl);
       if (!response.ok) {
         throw new Error('Unable to fetch document');
@@ -96,7 +97,11 @@ export const Detail: React.FC = () => {
       window.URL.revokeObjectURL(objectUrl);
     } catch (error) {
       console.error('Download failed, falling back to direct open:', error);
-      window.open(absoluteDocumentUrl, '_blank', 'noopener,noreferrer');
+      if (absoluteDocumentUrl) {
+        window.open(absoluteDocumentUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Download failed. Please try again.');
+      }
     }
   };
 
@@ -221,7 +226,8 @@ export const Detail: React.FC = () => {
               </div>
               <button 
                 onClick={handleDownload}
-                className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] hover:-translate-y-1 transition-all mb-6 active:scale-95"
+                disabled={!hasDocument}
+                className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] hover:-translate-y-1 transition-all mb-6 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
               >
                 <Download className="w-5 h-5" />
                 {hasDocument ? `Download ${documentLabel}` : `Download PDF`} ({displayData.pages} Pages)

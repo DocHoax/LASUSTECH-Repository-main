@@ -14,8 +14,10 @@ export const Home: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    const query = searchQuery.trim();
+    if (query.length >= 1) {
+      navigate(`/search?q=${encodeURIComponent(query)}`);
+      setSearchQuery('');
     }
   };
 
