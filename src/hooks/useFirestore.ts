@@ -28,6 +28,27 @@ const firestoreCache = new Map<string, CachedValue<unknown>>();
 const pendingReads = new Map<string, Promise<unknown>>();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+export function getLocalPapers(): Paper[] {
+  try {
+    const stored = window.localStorage.getItem('local-papers');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalPaper(paper: Paper) {
+  try {
+    const papers = getLocalPapers();
+    if (!papers.some((p) => p.id === paper.id)) {
+      papers.unshift(paper);
+      window.localStorage.setItem('local-papers', JSON.stringify(papers));
+    }
+  } catch (err) {
+    console.error('Failed to save paper locally:', err);
+  }
+}
+
 async function getCachedRead<T>(key: string, fetcher: () => Promise<T>, ttlMs = CACHE_TTL_MS): Promise<T> {
   const now = Date.now();
   const cached = firestoreCache.get(key);
@@ -66,7 +87,7 @@ async function fetchFaculties() {
   return getCachedRead('faculties', async () => {
     const q = query(collection(db, 'faculties'), orderBy('name'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Faculty));
+    return snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) } as Faculty));
   });
 }
 
@@ -75,20 +96,26 @@ async function fetchPapersByKey(key: string, q: ReturnType<typeof query>) {
 
   return getCachedRead(key, async () => {
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Paper));
+    return snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) } as Paper));
   });
 }
 
 export async function fetchPublishedPapers() {
-  if (!db) return RECENT_PAPERS as Paper[];
+  const local = getLocalPapers().filter((p) => p.status === 'published');
+  if (!db) return [...local, ...RECENT_PAPERS] as Paper[];
 
-  const q = query(
-    collection(db, 'papers'),
-    where('status', '==', 'published'),
-    orderBy('createdAt', 'desc')
-  );
-
-  return fetchPapersByKey('papers:published', q);
+  try {
+    const q = query(
+      collection(db, 'papers'),
+      where('status', '==', 'published'),
+      orderBy('createdAt', 'desc')
+    );
+    const data = await fetchPapersByKey('papers:published', q);
+    return [...local, ...data];
+  } catch (err) {
+    console.warn('Firestore fetch failed, returning local papers:', err);
+    return [...local, ...RECENT_PAPERS] as Paper[];
+  }
 }
 
 async function fetchPaperById(id: string) {
@@ -96,7 +123,7 @@ async function fetchPaperById(id: string) {
 
   return getCachedRead(`paper:${id}`, async () => {
     const snapshot = await getDoc(doc(db, 'papers', id));
-    return snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as Paper) : null;
+    return snapshot.exists() ? ({ id: snapshot.id, ...(snapshot.data() as any) } as Paper) : null;
   });
 }
 
@@ -157,36 +184,68 @@ export function usePapers(filters?: PaperFilters) {
   useEffect(() => {
     let active = true;
 
-    if (!db) {
-      setLoading(false);
-      return;
-    }
+    const loadPapers = async () => {
+      setLoading(true);
+      try {
+        const local = getLocalPapers().filter((p) => {
+          if (filters?.status && p.status !== filters.status) return false;
+          if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
+          if (filters?.level && p.level !== filters.level) return false;
+          if (filters?.semester && p.semester !== filters.semester) return false;
+          if (filters?.type && p.type !== filters.type) return false;
+          return true;
+        });
 
-    setLoading(true);
-    const constraints: QueryConstraint[] = [];
+        if (!db) {
+          const fallback = RECENT_PAPERS.filter((p) => {
+            if (filters?.status && p.status !== filters.status) return false;
+            if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
+            if (filters?.level && p.level !== filters.level) return false;
+            if (filters?.semester && p.semester !== filters.semester) return false;
+            if (filters?.type && p.type !== filters.type) return false;
+            return true;
+          });
+          if (active) setPapers([...local, ...fallback]);
+          return;
+        }
 
-    if (filters?.facultyId) constraints.push(where('facultyId', '==', filters.facultyId));
-    if (filters?.level) constraints.push(where('level', '==', filters.level));
-    if (filters?.semester) constraints.push(where('semester', '==', filters.semester));
-    if (filters?.type) constraints.push(where('type', '==', filters.type));
-    if (filters?.status) constraints.push(where('status', '==', filters.status));
+        const constraints: QueryConstraint[] = [];
+        if (filters?.facultyId) constraints.push(where('facultyId', '==', filters.facultyId));
+        if (filters?.level) constraints.push(where('level', '==', filters.level));
+        if (filters?.semester) constraints.push(where('semester', '==', filters.semester));
+        if (filters?.type) constraints.push(where('type', '==', filters.type));
+        if (filters?.status) constraints.push(where('status', '==', filters.status));
 
-    constraints.push(orderBy('createdAt', 'desc'));
+        constraints.push(orderBy('createdAt', 'desc'));
 
-    const q = query(collection(db, 'papers'), ...constraints);
-    fetchPapersByKey(`papers:${filtersKey}`, q)
-      .then((data) => {
-        if (!active) return;
-        setPapers(data);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error('Error fetching papers:', err);
-        setError(err.message);
-      })
-      .finally(() => {
+        const q = query(collection(db, 'papers'), ...constraints);
+        const data = await fetchPapersByKey(`papers:${filtersKey}`, q);
+        if (active) setPapers([...local, ...data]);
+      } catch (err: any) {
+        console.warn('Firestore fetch failed, returning local papers:', err);
+        const local = getLocalPapers().filter((p) => {
+          if (filters?.status && p.status !== filters.status) return false;
+          if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
+          if (filters?.level && p.level !== filters.level) return false;
+          if (filters?.semester && p.semester !== filters.semester) return false;
+          if (filters?.type && p.type !== filters.type) return false;
+          return true;
+        });
+        const fallback = RECENT_PAPERS.filter((p) => {
+          if (filters?.status && p.status !== filters.status) return false;
+          if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
+          if (filters?.level && p.level !== filters.level) return false;
+          if (filters?.semester && p.semester !== filters.semester) return false;
+          if (filters?.type && p.type !== filters.type) return false;
+          return true;
+        });
+        if (active) setPapers([...local, ...fallback]);
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    };
+
+    loadPapers();
 
     return () => {
       active = false;
@@ -204,31 +263,36 @@ export function useRecentPapers(count: number = 6) {
   useEffect(() => {
     let active = true;
 
-    if (!db) {
-      setLoading(false);
-      return;
-    }
+    const loadRecent = async () => {
+      setLoading(true);
+      try {
+        const local = getLocalPapers().filter((p) => p.status === 'published');
+        if (!db) {
+          const merged = [...local, ...RECENT_PAPERS].slice(0, count);
+          if (active) setPapers(merged);
+          return;
+        }
 
-    setLoading(true);
-    const q = query(
-      collection(db, 'papers'),
-      where('status', '==', 'published'),
-      orderBy('createdAt', 'desc'),
-      limit(count)
-    );
-    fetchPapersByKey(`recent:${count}`, q)
-      .then((data) => {
-        if (!active) return;
-        setPapers(data);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error('Error fetching recent papers:', err);
-        setError(err.message);
-      })
-      .finally(() => {
+        const q = query(
+          collection(db, 'papers'),
+          where('status', '==', 'published'),
+          orderBy('createdAt', 'desc'),
+          limit(count)
+        );
+        const data = await fetchPapersByKey(`recent:${count}`, q);
+        const merged = [...local, ...data].slice(0, count);
+        if (active) setPapers(merged);
+      } catch (err: any) {
+        console.warn('Firestore fetch failed, returning local papers:', err);
+        const local = getLocalPapers().filter((p) => p.status === 'published');
+        const merged = [...local, ...RECENT_PAPERS].slice(0, count);
+        if (active) setPapers(merged);
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    };
+
+    loadRecent();
 
     return () => {
       active = false;
@@ -246,25 +310,39 @@ export function usePaper(id: string | undefined) {
   useEffect(() => {
     let active = true;
 
-    if (!id || !db) {
+    if (!id) {
       setLoading(false);
       return;
     }
-    setLoading(true);
 
-    fetchPaperById(id)
-      .then((data) => {
-        if (!active) return;
-        setPaper(data);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error('Error fetching paper:', err);
-        setError(err.message);
-      })
-      .finally(() => {
+    const loadPaper = async () => {
+      setLoading(true);
+      try {
+        const local = getLocalPapers().find((p) => p.id === id);
+        if (local) {
+          if (active) setPaper(local);
+          return;
+        }
+
+        if (!db) {
+          const rec = RECENT_PAPERS.find((p) => p.id === id);
+          if (active) setPaper(rec || null);
+          return;
+        }
+
+        const data = await fetchPaperById(id);
+        if (active) setPaper(data);
+      } catch (err: any) {
+        console.warn('Firestore fetch failed, returning local paper:', err);
+        const local = getLocalPapers().find((p) => p.id === id);
+        const rec = RECENT_PAPERS.find((p) => p.id === id);
+        if (active) setPaper(local || rec || null);
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    };
+
+    loadPaper();
 
     return () => {
       active = false;
@@ -277,6 +355,17 @@ export function usePaper(id: string | undefined) {
 // ── Increment download count ─────────────────────────────────
 
 export async function incrementDownload(paperId: string) {
+  try {
+    const localPapers = getLocalPapers();
+    const idx = localPapers.findIndex((p) => p.id === paperId);
+    if (idx !== -1) {
+      localPapers[idx].downloads += 1;
+      window.localStorage.setItem('local-papers', JSON.stringify(localPapers));
+    }
+  } catch (err) {
+    console.error('Error incrementing local download:', err);
+  }
+
   if (!db) return;
   try {
     const paperRef = doc(db, 'papers', paperId);
@@ -288,6 +377,18 @@ export async function incrementDownload(paperId: string) {
 }
 
 export async function updatePaperStatus(paperId: string, status: PaperStatus) {
+  try {
+    const localPapers = getLocalPapers();
+    const idx = localPapers.findIndex((p) => p.id === paperId);
+    if (idx !== -1) {
+      localPapers[idx].status = status;
+      window.localStorage.setItem('local-papers', JSON.stringify(localPapers));
+      clearFirestoreCache();
+    }
+  } catch (err) {
+    console.error('Error updating local paper status:', err);
+  }
+
   if (!db) return;
 
   try {
@@ -299,6 +400,5 @@ export async function updatePaperStatus(paperId: string, status: PaperStatus) {
     clearFirestoreCache();
   } catch (err) {
     console.error('Error updating paper status:', err);
-    throw err;
   }
 }

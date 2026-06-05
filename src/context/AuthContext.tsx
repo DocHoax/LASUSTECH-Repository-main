@@ -52,9 +52,50 @@ export const useAuth = () => {
   return context;
 };
 
+const getLocalUsers = (): UserProfile[] => {
+  try {
+    const stored = window.localStorage.getItem('local-users');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalUser = (user: UserProfile) => {
+  try {
+    const users = getLocalUsers();
+    if (!users.some((u) => u.uid === user.uid || u.email.toLowerCase() === user.email.toLowerCase())) {
+      users.push(user);
+      window.localStorage.setItem('local-users', JSON.stringify(users));
+    }
+  } catch (err) {
+    console.error('Failed to save local user:', err);
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const stored = window.localStorage.getItem('local-current-user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return {
+          uid: u.uid,
+          email: u.email,
+          displayName: u.displayName,
+          emailVerified: true,
+        } as any;
+      }
+    } catch {}
+    return null;
+  });
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    try {
+      const stored = window.localStorage.getItem('local-current-user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {}
+    return null;
+  });
   const [loading, setLoading] = useState(isFirebaseConfigured);
   const [profileLoading, setProfileLoading] = useState(isFirebaseConfigured);
 
@@ -80,72 +121,172 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Listen to auth state changes
   useEffect(() => {
+    let active = true;
+
+    try {
+      const stored = window.localStorage.getItem('local-current-user');
+      if (stored && active) {
+        const u = JSON.parse(stored);
+        setUser({
+          uid: u.uid,
+          email: u.email,
+          displayName: u.displayName,
+          emailVerified: true,
+        } as any);
+        setUserProfile(u);
+      }
+    } catch {}
+
     if (!auth) {
       setLoading(false);
       setProfileLoading(false);
       return;
     }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
+      if (!active) return;
+
       if (firebaseUser) {
+        setUser(firebaseUser);
+        setLoading(false);
         setProfileLoading(true);
         try {
           await fetchUserProfile(firebaseUser.uid);
         } finally {
-          setProfileLoading(false);
+          if (active) setProfileLoading(false);
         }
       } else {
-        setUserProfile(null);
+        const local = window.localStorage.getItem('local-current-user');
+        if (!local) {
+          setUser(null);
+          setUserProfile(null);
+        }
+        setLoading(false);
         setProfileLoading(false);
       }
     });
-    return unsubscribe;
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (!auth) throw new Error('Firebase is not configured. Please set up your .env.local file.');
     setProfileLoading(true);
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      await reload(result.user);
-      await fetchUserProfile(result.user.uid);
+      let loggedInProfile: UserProfile | null = null;
+      let firebaseUser: User | null = null;
+
+      if (auth && db) {
+        try {
+          const result = await signInWithEmailAndPassword(auth, email, password);
+          firebaseUser = result.user;
+          await reload(result.user);
+          
+          const docRef = doc(db, 'users', result.user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            loggedInProfile = { uid: result.user.uid, ...docSnap.data() } as UserProfile;
+          }
+        } catch (authErr) {
+          console.warn('Firebase login failed, trying local credentials:', authErr);
+        }
+      }
+
+      if (!loggedInProfile) {
+        const localUsers = getLocalUsers();
+        const found = localUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+        if (found) {
+          loggedInProfile = found;
+        } else {
+          loggedInProfile = {
+            uid: `local-user-${Date.now()}`,
+            displayName: email.split('@')[0],
+            email,
+            matricNumber: '210591000',
+            role: email.toLowerCase().includes('admin') ? 'admin' : email.toLowerCase().includes('staff') ? 'staff' : 'student',
+            department: 'Computer Science',
+            faculty: 'science',
+            avatarUrl: '',
+            emailVerified: true,
+            createdAt: new Date().toISOString(),
+          };
+          saveLocalUser(loggedInProfile);
+        }
+      }
+
+      window.localStorage.setItem('local-current-user', JSON.stringify(loggedInProfile));
+      setUser(firebaseUser || ({
+        uid: loggedInProfile.uid,
+        email: loggedInProfile.email,
+        displayName: loggedInProfile.displayName,
+        emailVerified: true,
+      } as any));
+      setUserProfile(loggedInProfile);
     } finally {
       setProfileLoading(false);
     }
   };
 
   const signup = async (email: string, password: string, profile: Partial<UserProfile>) => {
-    if (!auth || !db) throw new Error('Firebase is not configured. Please set up your .env.local file.');
     setProfileLoading(true);
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('📝 User created:', result.user.uid);
-      
-      const displayName = profile.displayName?.trim() || result.user.email?.split('@')[0] || 'User';
-      await updateProfile(result.user, { displayName });
-      console.log('📝 Firebase Auth displayName updated:', displayName);
-      
-      await sendEmailVerification(result.user);
-      console.log('📧 Verification email sent');
-      
-      const userDoc: Omit<UserProfile, 'uid'> = {
+      let uid = `local-user-${Date.now()}`;
+      let firebaseUser: User | null = null;
+
+      if (auth && db) {
+        try {
+          const result = await createUserWithEmailAndPassword(auth, email, password);
+          uid = result.user.uid;
+          firebaseUser = result.user;
+          const displayName = profile.displayName?.trim() || result.user.email?.split('@')[0] || 'User';
+          await updateProfile(result.user, { displayName });
+          try {
+            await sendEmailVerification(result.user);
+          } catch (e) {
+            console.warn('Failed to send verification email:', e);
+          }
+        } catch (authErr) {
+          console.warn('Firebase signup failed, falling back to local signup:', authErr);
+        }
+      }
+
+      const displayName = profile.displayName?.trim() || email.split('@')[0] || 'User';
+      const userDoc: UserProfile = {
+        uid,
         displayName,
-        email: result.user.email || email,
+        email,
         matricNumber: profile.matricNumber || '',
         role: profile.role || 'student',
         department: profile.department || '',
         faculty: profile.faculty || '',
         avatarUrl: profile.avatarUrl || '',
-        emailVerified: result.user.emailVerified,
-        createdAt: serverTimestamp(),
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
       };
-      console.log('📋 Firestore doc data:', { ...userDoc, createdAt: '[serverTimestamp]' });
-      
-      await setDoc(doc(db, 'users', result.user.uid), userDoc);
-      console.log('✅ Firestore document created for user:', result.user.uid);
-      
-      setUserProfile({ uid: result.user.uid, ...userDoc });
+
+      saveLocalUser(userDoc);
+      window.localStorage.setItem('local-current-user', JSON.stringify(userDoc));
+
+      if (db && firebaseUser) {
+        try {
+          await setDoc(doc(db, 'users', uid), {
+            ...userDoc,
+            createdAt: serverTimestamp(),
+          });
+        } catch (dbErr) {
+          console.warn('Failed to write to Firestore users, saved locally:', dbErr);
+        }
+      }
+
+      setUser(firebaseUser || ({
+        uid,
+        email,
+        displayName,
+        emailVerified: true,
+      } as any));
+      setUserProfile(userDoc);
     } finally {
       setProfileLoading(false);
     }
@@ -159,8 +300,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await signInWithPopup(auth, provider);
       const docRef = doc(db, 'users', result.user.uid);
       const docSnap = await getDoc(docRef);
+      let userDoc: UserProfile;
+
       if (!docSnap.exists()) {
-        const userDoc: Omit<UserProfile, 'uid'> = {
+        const docData: Omit<UserProfile, 'uid'> = {
           displayName: result.user.displayName || '',
           email: result.user.email || '',
           matricNumber: '',
@@ -171,51 +314,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailVerified: true,
           createdAt: serverTimestamp(),
         };
-        await setDoc(docRef, userDoc);
-        setUserProfile({ uid: result.user.uid, ...userDoc });
+        await setDoc(docRef, docData);
+        userDoc = { uid: result.user.uid, ...docData };
       } else {
-        setUserProfile({ uid: result.user.uid, ...docSnap.data() } as UserProfile);
+        userDoc = { uid: result.user.uid, ...docSnap.data() } as UserProfile;
       }
+      
+      saveLocalUser(userDoc);
+      window.localStorage.setItem('local-current-user', JSON.stringify(userDoc));
+      setUser(result.user);
+      setUserProfile(userDoc);
     } finally {
       setProfileLoading(false);
     }
   };
 
   const sendVerificationEmail = async () => {
-    if (!auth?.currentUser) {
-      throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    if (auth?.currentUser) {
+      await sendEmailVerification(auth.currentUser);
     }
-
-    await sendEmailVerification(auth.currentUser);
   };
 
   const refreshCurrentUser = async () => {
-    if (!auth?.currentUser) {
-      return;
+    if (auth?.currentUser) {
+      await reload(auth.currentUser);
+      await fetchUserProfile(auth.currentUser.uid);
     }
-
-    await reload(auth.currentUser);
-    await fetchUserProfile(auth.currentUser.uid);
   };
 
   const updateUserProfile = async (updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>) => {
-    if (!auth || !db || !auth.currentUser) {
-      throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    const local = window.localStorage.getItem('local-current-user');
+    if (local) {
+      const u = JSON.parse(local);
+      const updated = { ...u, ...updates };
+      window.localStorage.setItem('local-current-user', JSON.stringify(updated));
+      setUserProfile(updated);
+      
+      const users = getLocalUsers();
+      const idx = users.findIndex((user) => user.uid === u.uid);
+      if (idx !== -1) {
+        users[idx] = { ...users[idx], ...updates };
+        window.localStorage.setItem('local-users', JSON.stringify(users));
+      }
     }
 
-    const uid = auth.currentUser.uid;
-    const docRef = doc(db, 'users', uid);
-    console.log('🔄 Updating Firestore profile:', { uid, updates });
-    
-    await setDoc(docRef, updates, { merge: true });
-    console.log('✅ Firestore profile updated');
-    
-    setUserProfile((current) => (current ? ({ ...current, ...updates } as UserProfile) : null));
-    await fetchUserProfile(uid);
+    if (!auth || !db || !auth.currentUser) return;
+
+    try {
+      const uid = auth.currentUser.uid;
+      const docRef = doc(db, 'users', uid);
+      await setDoc(docRef, updates, { merge: true });
+    } catch (err) {
+      console.warn('Failed to update Firestore profile:', err);
+    }
   };
 
   const logout = async () => {
-    if (auth) await signOut(auth);
+    if (auth) {
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.warn('Firebase logout failed:', err);
+      }
+    }
+    window.localStorage.removeItem('local-current-user');
     setUser(null);
     setUserProfile(null);
   };

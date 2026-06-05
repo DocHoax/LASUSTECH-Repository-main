@@ -26,6 +26,7 @@ export interface Paper {
   departmentId?: string;
   fileUrl?: string;
   uploadedBy?: string;
+  uploaderName?: string;
   contributorRole?: 'student' | 'staff' | 'admin';
   contributorEmail?: string;
   createdAt?: any;

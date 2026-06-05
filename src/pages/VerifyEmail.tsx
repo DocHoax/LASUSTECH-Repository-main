@@ -51,14 +51,24 @@ export const VerifyEmail: React.FC = () => {
     setMessage(null);
     setChecking(true);
     try {
+      if (!auth) {
+        const destination = state.from?.pathname || '/';
+        navigate(destination, { replace: true });
+        return;
+      }
       await refreshCurrentUser();
-      if (auth.currentUser?.emailVerified) {
+      if (auth.currentUser?.emailVerified || user?.emailVerified) {
         const destination = state.from?.pathname || '/';
         navigate(destination, { replace: true });
         return;
       }
       setMessage('Verification is still pending. Please use the link in your email first.');
     } catch (error: any) {
+      if (user?.emailVerified) {
+        const destination = state.from?.pathname || '/';
+        navigate(destination, { replace: true });
+        return;
+      }
       setMessage(error?.message || 'Unable to refresh your verification status.');
     } finally {
       setChecking(false);

@@ -49,11 +49,13 @@ export const SearchResults: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = localQuery.trim();
+    const next = new URLSearchParams(searchParams);
     if (query.length >= 1) {
-      const next = new URLSearchParams(searchParams);
       next.set('q', query);
-      setSearchParams(next);
+    } else {
+      next.delete('q');
     }
+    setSearchParams(next);
   };
 
   return (

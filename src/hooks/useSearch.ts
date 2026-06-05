@@ -20,7 +20,7 @@ export function useSearch(searchQuery: string, filters?: SearchFilters) {
 
   useEffect(() => {
     const normalizedQuery = searchQuery.toLowerCase().trim();
-    const hasQuery = normalizedQuery.length >= 2;
+    const hasQuery = normalizedQuery.length >= 1;
     const hasFilters = Boolean(filters?.level || filters?.type || filters?.year || filters?.facultyId || filters?.departmentId);
 
     if (!hasQuery && !hasFilters) {

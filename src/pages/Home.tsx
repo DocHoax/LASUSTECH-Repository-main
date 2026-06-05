@@ -18,6 +18,8 @@ export const Home: React.FC = () => {
     if (query.length >= 1) {
       navigate(`/search?q=${encodeURIComponent(query)}`);
       setSearchQuery('');
+    } else {
+      navigate('/search');
     }
   };
 

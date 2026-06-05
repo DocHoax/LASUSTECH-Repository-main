@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { usePaper, incrementDownload } from '../hooks/useFirestore';
 import { cn, openMailto } from '../lib/utils';
+import { RECENT_PAPERS } from '../constants';
 
 export const Detail: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +26,8 @@ export const Detail: React.FC = () => {
   const [isSaved, setIsSaved] = React.useState(false);
 
   // Fallback display data when no paper is loaded from Firestore
-  const displayData = paper || {
+  const localPaper = RECENT_PAPERS.find((p) => p.id === paperId);
+  const displayData = paper || localPaper || {
     id: paperId || 'csc-202',
     title: 'Data Structures & Algorithms',
     courseCode: 'CSC 202',
@@ -37,7 +39,7 @@ export const Detail: React.FC = () => {
     date: '2 days ago',
     type: 'Past Question',
     status: 'published' as const,
-    fileUrl: '',
+    fileUrl: '/papers/COMPUTER%20PROGRAMMING.docx',
   };
 
   const rawDocumentUrl = paper?.fileUrl || displayData.fileUrl || '';

@@ -76,6 +76,14 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-2 md:gap-6 shrink-0">
           <div className="hidden sm:flex items-center gap-2">
             <button
+              onClick={() => handleNavigate('/search')}
+              className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 transition-all rounded-xl"
+              title="Search Archive"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            <button
               type="button"
               onClick={() => openMailto('support@lasustech.edu.ng', 'Repository Alerts')}
               className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 transition-all rounded-xl relative"
@@ -127,6 +135,14 @@ export const Navbar: React.FC = () => {
             </button>
           )}
           
+          <button
+            onClick={() => handleNavigate('/search')}
+            className="lg:hidden w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-50 transition-all rounded-xl"
+            title="Search Archive"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl shadow-lg"
@@ -190,6 +206,15 @@ export const Navbar: React.FC = () => {
 
               <div className="mt-12 space-y-6">
                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4">Account</p>
+                <button 
+                  onClick={() => handleNavigate('/search')}
+                  className="w-full flex items-center gap-4 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl transition-all"
+                >
+                  <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
+                    <Search className="w-5 h-5" />
+                  </div>
+                  <span className="font-black text-xs uppercase tracking-widest">Search Archive</span>
+                </button>
                 <button 
                   onClick={() => handleNavigate('/dashboard')}
                   className="w-full flex items-center gap-4 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl transition-all"
