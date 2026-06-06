@@ -50,6 +50,14 @@ export function saveLocalPaper(paper: Paper) {
   }
 }
 
+export function sortPapersNewestFirst(papers: Paper[]): Paper[] {
+  return [...papers].sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
+}
+
 async function getCachedRead<T>(key: string, fetcher: () => Promise<T>, ttlMs = CACHE_TTL_MS): Promise<T> {
   const now = Date.now();
   const cached = firestoreCache.get(key);
@@ -104,19 +112,30 @@ async function fetchPapersByKey(key: string, q: ReturnType<typeof query>) {
 export async function fetchPublishedPapers(localOnlyParam?: boolean) {
   const isLocal = localOnlyParam !== undefined ? localOnlyParam : useLocalOnly;
   const local = getLocalPapers().filter((p) => p.status === 'published');
-  if (!db || isLocal) return [...local, ...RECENT_PAPERS] as Paper[];
+  if (!db || isLocal) {
+    return sortPapersNewestFirst([...local, ...RECENT_PAPERS].filter(
+      (p) => p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+    ));
+  }
 
   try {
     const q = query(
       collection(db, 'papers'),
       where('status', '==', 'published'),
+      where('type', '==', 'Past Question'),
+      where('facultyId', '==', 'science'),
+      where('departmentId', '==', 'computer-science'),
       orderBy('createdAt', 'desc')
     );
     const data = await fetchPapersByKey('papers:published', q);
-    return [...local, ...data];
+    return sortPapersNewestFirst([...local, ...data].filter(
+      (p) => p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+    ));
   } catch (err) {
     console.warn('Firestore fetch failed, returning local papers:', err);
-    return [...local, ...RECENT_PAPERS] as Paper[];
+    return sortPapersNewestFirst([...local, ...RECENT_PAPERS].filter(
+      (p) => p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+    ));
   }
 }
 
@@ -194,58 +213,63 @@ export function usePapers(filters?: PaperFilters) {
       setLoading(true);
       try {
         const local = getLocalPapers().filter((p) => {
+          if (p.type !== 'Past Question') return false;
+          if (p.facultyId !== 'science') return false;
+          if (p.departmentId !== 'computer-science') return false;
           if (filters?.status && p.status !== filters.status) return false;
-          if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
           if (filters?.level && p.level !== filters.level) return false;
           if (filters?.semester && p.semester !== filters.semester) return false;
-          if (filters?.type && p.type !== filters.type) return false;
           return true;
         });
 
         if (!db || localOnly) {
           const fallback = RECENT_PAPERS.filter((p) => {
+            if (p.type !== 'Past Question') return false;
+            if (p.facultyId !== 'science') return false;
+            if (p.departmentId !== 'computer-science') return false;
             if (filters?.status && p.status !== filters.status) return false;
-            if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
             if (filters?.level && p.level !== filters.level) return false;
             if (filters?.semester && p.semester !== filters.semester) return false;
-            if (filters?.type && p.type !== filters.type) return false;
             return true;
           });
-          if (active) setPapers([...local, ...fallback]);
+          if (active) setPapers(sortPapersNewestFirst([...local, ...fallback]));
           return;
         }
 
         const constraints: QueryConstraint[] = [];
-        if (filters?.facultyId) constraints.push(where('facultyId', '==', filters.facultyId));
+        constraints.push(where('type', '==', 'Past Question'));
+        constraints.push(where('facultyId', '==', 'science'));
+        constraints.push(where('departmentId', '==', 'computer-science'));
         if (filters?.level) constraints.push(where('level', '==', filters.level));
         if (filters?.semester) constraints.push(where('semester', '==', filters.semester));
-        if (filters?.type) constraints.push(where('type', '==', filters.type));
         if (filters?.status) constraints.push(where('status', '==', filters.status));
 
         constraints.push(orderBy('createdAt', 'desc'));
 
         const q = query(collection(db, 'papers'), ...constraints);
         const data = await fetchPapersByKey(`papers:${filtersKey}`, q);
-        if (active) setPapers([...local, ...data]);
+        if (active) setPapers(sortPapersNewestFirst([...local, ...data]));
       } catch (err: any) {
         console.warn('Firestore fetch failed, returning local papers:', err);
         const local = getLocalPapers().filter((p) => {
+          if (p.type !== 'Past Question') return false;
+          if (p.facultyId !== 'science') return false;
+          if (p.departmentId !== 'computer-science') return false;
           if (filters?.status && p.status !== filters.status) return false;
-          if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
           if (filters?.level && p.level !== filters.level) return false;
           if (filters?.semester && p.semester !== filters.semester) return false;
-          if (filters?.type && p.type !== filters.type) return false;
           return true;
         });
         const fallback = RECENT_PAPERS.filter((p) => {
+          if (p.type !== 'Past Question') return false;
+          if (p.facultyId !== 'science') return false;
+          if (p.departmentId !== 'computer-science') return false;
           if (filters?.status && p.status !== filters.status) return false;
-          if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
           if (filters?.level && p.level !== filters.level) return false;
           if (filters?.semester && p.semester !== filters.semester) return false;
-          if (filters?.type && p.type !== filters.type) return false;
           return true;
         });
-        if (active) setPapers([...local, ...fallback]);
+        if (active) setPapers(sortPapersNewestFirst([...local, ...fallback]));
       } finally {
         if (active) setLoading(false);
       }
@@ -273,9 +297,13 @@ export function useRecentPapers(count: number = 6) {
     const loadRecent = async () => {
       setLoading(true);
       try {
-        const local = getLocalPapers().filter((p) => p.status === 'published');
+        const local = getLocalPapers().filter(
+          (p) => p.status === 'published' && p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+        );
         if (!db || localOnly) {
-          const merged = [...local, ...RECENT_PAPERS].slice(0, count);
+          const merged = sortPapersNewestFirst([...local, ...RECENT_PAPERS].filter(
+            (p) => p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+          )).slice(0, count);
           if (active) setPapers(merged);
           return;
         }
@@ -283,16 +311,25 @@ export function useRecentPapers(count: number = 6) {
         const q = query(
           collection(db, 'papers'),
           where('status', '==', 'published'),
+          where('type', '==', 'Past Question'),
+          where('facultyId', '==', 'science'),
+          where('departmentId', '==', 'computer-science'),
           orderBy('createdAt', 'desc'),
           limit(count)
         );
         const data = await fetchPapersByKey(`recent:${count}`, q);
-        const merged = [...local, ...data].slice(0, count);
+        const merged = sortPapersNewestFirst([...local, ...data].filter(
+          (p) => p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+        )).slice(0, count);
         if (active) setPapers(merged);
       } catch (err: any) {
         console.warn('Firestore fetch failed, returning local papers:', err);
-        const local = getLocalPapers().filter((p) => p.status === 'published');
-        const merged = [...local, ...RECENT_PAPERS].slice(0, count);
+        const local = getLocalPapers().filter(
+          (p) => p.status === 'published' && p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+        );
+        const merged = sortPapersNewestFirst([...local, ...RECENT_PAPERS].filter(
+          (p) => p.type === 'Past Question' && p.facultyId === 'science' && p.departmentId === 'computer-science'
+        )).slice(0, count);
         if (active) setPapers(merged);
       } finally {
         if (active) setLoading(false);
@@ -328,7 +365,11 @@ export function usePaper(id: string | undefined) {
       try {
         const local = getLocalPapers().find((p) => p.id === id);
         if (local) {
-          if (active) setPaper(local);
+          if (local.type === 'Past Question' && local.facultyId === 'science' && local.departmentId === 'computer-science') {
+            if (active) setPaper(local);
+          } else {
+            if (active) setPaper(null);
+          }
           return;
         }
 

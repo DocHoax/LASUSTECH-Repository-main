@@ -21,7 +21,7 @@ export const Sidebar: React.FC = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
-    { path: '/directory', label: 'FACULTY DIRECTORY', icon: Folder },
+    { path: '/directory', label: 'CS DIRECTORY', icon: Folder },
     { path: '/upload', label: 'MY CONTRIBUTIONS', icon: UploadCloud },
   ];
 

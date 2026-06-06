@@ -16,7 +16,7 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { path: '/', label: 'REPOSITORY' },
-    { path: '/directory', label: 'FACULTY' },
+    { path: '/directory', label: 'CS DIRECTORY' },
     { path: '/upload', label: 'UPLOAD' }
   ];
 

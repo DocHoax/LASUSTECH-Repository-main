@@ -19,7 +19,7 @@ export const Upload: React.FC = () => {
   const [courseCode, setCourseCode] = React.useState('');
   const [level, setLevel] = React.useState('');
   const [semester, setSemester] = React.useState('1st Semester');
-  const [docType, setDocType] = React.useState('Past Question');
+  const docType = 'Past Question';
   const [year, setYear] = React.useState('2023/2024');
 
   // Submission state
@@ -188,7 +188,6 @@ export const Upload: React.FC = () => {
     setCourseCode('');
     setLevel('');
     setSemester('1st Semester');
-    setDocType('Past Question');
     setYear('2023/2024');
     setSubmitted(false);
     setError(null);
@@ -383,15 +382,12 @@ export const Upload: React.FC = () => {
               </div>
               <div className="space-y-3">
                 <label className="text-[11px] font-black text-primary uppercase tracking-widest ml-1 opacity-60">Document Type</label>
-                <select 
-                  value={docType}
-                  onChange={(e) => setDocType(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:ring-4 focus:ring-primary/5 focus:bg-white rounded-2xl p-4 text-sm font-semibold transition-all appearance-none"
-                >
-                  <option>Past Question</option>
-                  <option>Lecture Note</option>
-                  <option>Research Paper</option>
-                </select>
+                <input 
+                  type="text" 
+                  value="Past Question"
+                  readOnly
+                  className="w-full bg-slate-100 border-2 border-transparent rounded-2xl p-4 text-sm font-semibold text-slate-500 cursor-not-allowed"
+                />
               </div>
               <div className="space-y-3">
                 <label className="text-[11px] font-black text-primary uppercase tracking-widest ml-1 opacity-60">Academic Year</label>
