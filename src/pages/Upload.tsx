@@ -4,7 +4,7 @@ import { CloudUpload, FileText, Info, Send, Paperclip, X, HelpCircle, ShieldChec
 import { useFileUpload } from '../hooks/useStorage';
 import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, useLocalOnly } from '../lib/firebase';
 import { saveLocalPaper } from '../hooks/useFirestore';
 
 export const Upload: React.FC = () => {
@@ -102,8 +102,8 @@ export const Upload: React.FC = () => {
     try {
       let downloadUrl = '';
 
-      // 1. Upload file to Firebase Storage if db is configured
-      if (db) {
+      // 1. Upload file to Firebase Storage if db is configured and not in Local-Only mode
+      if (db && !useLocalOnly) {
         try {
           const filePath = `papers/${user.uid}/${Date.now()}_${file.name}`;
           downloadUrl = await uploadFile(file, filePath);
@@ -160,8 +160,8 @@ export const Upload: React.FC = () => {
       // 2. Save locally to localStorage
       saveLocalPaper(newPaper);
 
-      // 3. Try to save to Firestore if configured
-      if (db) {
+      // 3. Try to save to Firestore if configured and not in Local-Only mode
+      if (db && !useLocalOnly) {
         try {
           await addDoc(collection(db, 'papers'), {
             ...newPaper,

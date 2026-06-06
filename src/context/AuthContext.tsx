@@ -12,7 +12,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from '../lib/firebase';
+import { auth, db, isFirebaseConfigured, useLocalOnly, setUseLocalOnly } from '../lib/firebase';
 
 export interface UserProfile {
   uid: string;
@@ -33,6 +33,7 @@ interface AuthContextType {
   loading: boolean;
   profileLoading: boolean;
   isConfigured: boolean;
+  localOnly: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
@@ -73,6 +74,19 @@ const saveLocalUser = (user: UserProfile) => {
   }
 };
 
+const checkFirebaseConnectivity = async (): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1500));
+    const testDoc = getDoc(doc(db, 'faculties', 'science'));
+    await Promise.race([testDoc, timeout]);
+    return true;
+  } catch (err) {
+    console.warn('Firebase connectivity check failed, Local-Only mode activated:', err);
+    return false;
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
@@ -96,8 +110,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
     return null;
   });
-  const [loading, setLoading] = useState(isFirebaseConfigured);
-  const [profileLoading, setProfileLoading] = useState(isFirebaseConfigured);
+  const [loading, setLoading] = useState(isFirebaseConfigured && !useLocalOnly);
+  const [profileLoading, setProfileLoading] = useState(isFirebaseConfigured && !useLocalOnly);
+  const [localOnly, setLocalOnlyState] = useState(() => {
+    return typeof window !== 'undefined' && window.localStorage.getItem('use-local-only') === 'true';
+  });
 
   // Fetch user profile from Firestore
   const fetchUserProfile = async (uid: string) => {
@@ -137,7 +154,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch {}
 
-    if (!auth) {
+    const initConnectionCheck = async () => {
+      if (useLocalOnly) {
+        if (active) {
+          setLoading(false);
+          setProfileLoading(false);
+        }
+        return;
+      }
+      const isConnected = await checkFirebaseConnectivity();
+      if (!isConnected && active) {
+        setUseLocalOnly(true);
+        setLocalOnlyState(true);
+        setLoading(false);
+        setProfileLoading(false);
+      }
+    };
+
+    initConnectionCheck();
+
+    if (!auth || useLocalOnly || localOnly) {
       setLoading(false);
       setProfileLoading(false);
       return;
@@ -145,6 +181,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!active) return;
+      if (useLocalOnly || localOnly) {
+        setLoading(false);
+        setProfileLoading(false);
+        return;
+      }
 
       if (firebaseUser) {
         setUser(firebaseUser);
@@ -178,7 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let loggedInProfile: UserProfile | null = null;
       let firebaseUser: User | null = null;
 
-      if (auth && db) {
+      if (auth && db && !localOnly) {
         try {
           const result = await signInWithEmailAndPassword(auth, email, password);
           firebaseUser = result.user;
@@ -235,7 +276,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let uid = `local-user-${Date.now()}`;
       let firebaseUser: User | null = null;
 
-      if (auth && db) {
+      if (auth && db && !localOnly) {
         try {
           const result = await createUserWithEmailAndPassword(auth, email, password);
           uid = result.user.uid;
@@ -269,7 +310,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       saveLocalUser(userDoc);
       window.localStorage.setItem('local-current-user', JSON.stringify(userDoc));
 
-      if (db && firebaseUser) {
+      if (db && firebaseUser && !localOnly) {
         try {
           await setDoc(doc(db, 'users', uid), {
             ...userDoc,
@@ -293,7 +334,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
-    if (!auth || !db) throw new Error('Firebase is not configured. Please set up your .env.local file.');
+    if (localOnly || !auth || !db) {
+      // Create a mock Google user locally!
+      const mockProfile: UserProfile = {
+        uid: `local-google-${Date.now()}`,
+        displayName: 'Google Demo User',
+        email: 'google-demo@lasustech.edu.ng',
+        matricNumber: '210591000',
+        role: 'student',
+        department: 'Computer Science',
+        faculty: 'science',
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+      };
+      saveLocalUser(mockProfile);
+      window.localStorage.setItem('local-current-user', JSON.stringify(mockProfile));
+      setUser({
+        uid: mockProfile.uid,
+        email: mockProfile.email,
+        displayName: mockProfile.displayName,
+        emailVerified: true,
+      } as any);
+      setUserProfile(mockProfile);
+      return;
+    }
     setProfileLoading(true);
     try {
       const provider = new GoogleAuthProvider();
@@ -336,6 +401,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshCurrentUser = async () => {
+    if (localOnly) return;
     if (auth?.currentUser) {
       await reload(auth.currentUser);
       await fetchUserProfile(auth.currentUser.uid);
@@ -358,7 +424,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    if (!auth || !db || !auth.currentUser) return;
+    if (!auth || !db || !auth.currentUser || localOnly) return;
 
     try {
       const uid = auth.currentUser.uid;
@@ -370,7 +436,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (auth) {
+    if (auth && !localOnly) {
       try {
         await signOut(auth);
       } catch (err) {
@@ -383,7 +449,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, profileLoading, isConfigured: isFirebaseConfigured, login, signup, loginWithGoogle, sendVerificationEmail, refreshCurrentUser, updateUserProfile, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, profileLoading, isConfigured: isFirebaseConfigured, localOnly, login, signup, loginWithGoogle, sendVerificationEmail, refreshCurrentUser, updateUserProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Paper } from '../types';
 import { RECENT_PAPERS } from '../constants';
-import { fetchPublishedPapers } from './useFirestore';
+import { fetchPublishedPapers, getLocalPapers } from './useFirestore';
 import { isFirebaseConfigured } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 
 export interface SearchFilters {
   level?: string;
@@ -13,6 +14,7 @@ export interface SearchFilters {
 }
 
 export function useSearch(searchQuery: string, filters?: SearchFilters) {
+  const { localOnly } = useAuth();
   const [results, setResults] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function useSearch(searchQuery: string, filters?: SearchFilters) {
       setError(null);
 
       try {
-        const allPapers = isFirebaseConfigured ? await fetchPublishedPapers() : RECENT_PAPERS;
+        const allPapers = (isFirebaseConfigured && !localOnly) ? await fetchPublishedPapers(localOnly) : [...getLocalPapers().filter((p) => p.status === 'published'), ...RECENT_PAPERS];
         const filtered = allPapers.filter((paper) => {
           const matchesQuery = !hasQuery || (
             paper.title.toLowerCase().includes(normalizedQuery) ||
@@ -63,7 +65,7 @@ export function useSearch(searchQuery: string, filters?: SearchFilters) {
 
     const timer = setTimeout(search, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, filtersKey]);
+  }, [searchQuery, filtersKey, localOnly]);
 
   return { results, loading, error };
 }

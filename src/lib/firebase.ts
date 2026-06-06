@@ -29,4 +29,13 @@ try {
   console.warn('Firebase initialization failed:', error);
 }
 
+export let useLocalOnly = typeof window !== 'undefined' && window.localStorage.getItem('use-local-only') === 'true';
+
+export function setUseLocalOnly(val: boolean) {
+  useLocalOnly = val;
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('use-local-only', String(val));
+  }
+}
+
 export { app, auth, db, storage };

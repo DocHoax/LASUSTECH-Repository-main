@@ -13,9 +13,10 @@ import {
   getDocs,
   getDoc,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, useLocalOnly, setUseLocalOnly } from '../lib/firebase';
 import { Faculty, Paper } from '../types';
-import { RECENT_PAPERS } from '../constants';
+import { RECENT_PAPERS, FACULTIES } from '../constants';
+import { useAuth } from '../context/AuthContext';
 
 export type PaperStatus = NonNullable<Paper['status']>;
 
@@ -100,9 +101,10 @@ async function fetchPapersByKey(key: string, q: ReturnType<typeof query>) {
   });
 }
 
-export async function fetchPublishedPapers() {
+export async function fetchPublishedPapers(localOnlyParam?: boolean) {
+  const isLocal = localOnlyParam !== undefined ? localOnlyParam : useLocalOnly;
   const local = getLocalPapers().filter((p) => p.status === 'published');
-  if (!db) return [...local, ...RECENT_PAPERS] as Paper[];
+  if (!db || isLocal) return [...local, ...RECENT_PAPERS] as Paper[];
 
   try {
     const q = query(
@@ -130,6 +132,7 @@ async function fetchPaperById(id: string) {
 // ── Faculties ────────────────────────────────────────────────
 
 export function useFaculties() {
+  const { localOnly } = useAuth();
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +140,8 @@ export function useFaculties() {
   useEffect(() => {
     let active = true;
 
-    if (!db) {
+    if (!db || localOnly) {
+      setFaculties(FACULTIES);
       setLoading(false);
       return;
     }
@@ -146,11 +150,12 @@ export function useFaculties() {
     fetchFaculties()
       .then((data) => {
         if (!active) return;
-        setFaculties(data);
+        setFaculties(data.length > 0 ? data : FACULTIES);
       })
       .catch((err) => {
         if (!active) return;
         console.error('Error fetching faculties:', err);
+        setFaculties(FACULTIES);
         setError(err.message);
       })
       .finally(() => {
@@ -160,7 +165,7 @@ export function useFaculties() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [localOnly]);
 
   return { faculties, loading, error };
 }
@@ -176,6 +181,7 @@ interface PaperFilters {
 }
 
 export function usePapers(filters?: PaperFilters) {
+  const { localOnly } = useAuth();
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -196,7 +202,7 @@ export function usePapers(filters?: PaperFilters) {
           return true;
         });
 
-        if (!db) {
+        if (!db || localOnly) {
           const fallback = RECENT_PAPERS.filter((p) => {
             if (filters?.status && p.status !== filters.status) return false;
             if (filters?.facultyId && p.facultyId !== filters.facultyId) return false;
@@ -250,12 +256,13 @@ export function usePapers(filters?: PaperFilters) {
     return () => {
       active = false;
     };
-  }, [filtersKey]);
+  }, [filtersKey, localOnly]);
 
   return { papers, loading, error };
 }
 
 export function useRecentPapers(count: number = 6) {
+  const { localOnly } = useAuth();
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -267,7 +274,7 @@ export function useRecentPapers(count: number = 6) {
       setLoading(true);
       try {
         const local = getLocalPapers().filter((p) => p.status === 'published');
-        if (!db) {
+        if (!db || localOnly) {
           const merged = [...local, ...RECENT_PAPERS].slice(0, count);
           if (active) setPapers(merged);
           return;
@@ -297,12 +304,13 @@ export function useRecentPapers(count: number = 6) {
     return () => {
       active = false;
     };
-  }, [count]);
+  }, [count, localOnly]);
 
   return { papers, loading, error };
 }
 
 export function usePaper(id: string | undefined) {
+  const { localOnly } = useAuth();
   const [paper, setPaper] = useState<Paper | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -324,7 +332,7 @@ export function usePaper(id: string | undefined) {
           return;
         }
 
-        if (!db) {
+        if (!db || localOnly) {
           const rec = RECENT_PAPERS.find((p) => p.id === id);
           if (active) setPaper(rec || null);
           return;
@@ -347,7 +355,7 @@ export function usePaper(id: string | undefined) {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, localOnly]);
 
   return { paper, loading, error };
 }
